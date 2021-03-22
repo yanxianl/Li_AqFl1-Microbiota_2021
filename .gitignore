@@ -2,15 +2,12 @@
 .Rhistory
 .RData
 
-data/dada2/*biom*
-data/qiime2/*.qza
-data/qiime2/*/*.qza
-data/qiime2/decontam/*.biom
-data/qiime2/decontam/taxonomy.tsv
-data/raw/casava-18-paired-end-demultiplexed/
-data/reference/silva*
+data/raw/casava-18-paired-end-demultiplexed*/*
+data/reference/*silva*
 data/reference/*.biom
 
+code/*_cache
+code/*_files
 
 
 
