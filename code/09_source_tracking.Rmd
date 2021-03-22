@@ -1,0 +1,318 @@
+---
+title: "Source tracking"
+author: "Yanxian Li<br><small>Department of Paraclinical Sciences<br>Faculty of Veterinary Medicine<br>Norwegian University of Life Sciences</small>"
+date: "<small>`r Sys.Date()`</small>"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+    toc_float: 
+      collapsed: true
+    code_folding: show
+    theme: cerulean
+    self_contained: true
+  pdf_document: 
+    latex_engine: xelatex
+  word_document: default  
+---
+
+```{r style, echo = FALSE, message = FALSE, warning = FALSE}
+require(knitr)
+opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = FALSE)
+```
+
+`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "left",  buttonSide = "left")`
+
+# Getting ready
+
+Load packages
+
+```{r load-package}
+library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
+library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
+library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN v1.1.1  
+library(RColorBrewer) # ColorBrewer Palettes, CRAN v1.1-2
+library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
+library(FEAST) # microbial source tracking, [github::cozygene/FEAST] v0.1.0
+```
+
+# Data preprocessing
+
+```{r}
+# load phyloseq object
+ps <- readRDS(here("data/intermediate/qiime2R/phyloseq.rds"))
+
+# Extract OTU table and metadata
+otu <- otu_table(ps) %>% as("matrix") %>% t()
+mtd <- data.frame(sample_data(ps), check.names = FALSE)
+
+# metadata preprocessing
+mtd <- mtd %>% 
+  rownames_to_column("SampleID") %>%
+  # remove control samples
+  filter(!SampleType %in% c("Extraction-blank", "PCR-blank", "Mock")) %>%
+  # remove technical replicates
+  filter(!(IsTechnicalReplicate == "yes" & PCRBatch == 2)) %>%
+  # remove fish with missing samples
+  filter(!FishID %in% c(216)) %>%
+  arrange(SampleType) %>%
+  # assign tank ids to water samples
+  mutate(Tank = ifelse(grepl("H2O", SampleName), SampleName, Tank),
+         Tank = gsub("H2O-", "T", Tank),
+         Tank = factor(Tank, levels = unique(Tank)))
+
+# subset feed samples  
+f_ref <- filter(mtd, SampleName == "FeedREF")
+f_im <- filter(mtd, SampleName == "FeedIM")
+
+# subset water samples 
+nfish <- filter(mtd, !SampleType %in% c("Water", "Feed")) %>% 
+  group_by(Tank) %>% 
+  summarise(nfish = length(unique(FishID))) %>%
+  pull(nfish) # number of fish per tank
+
+wt <- filter(mtd, SampleType == "Water") %>%
+  # split water samples based on Tank id
+  group_split(Tank) %>%
+  # duplicate water samples based on the number of fish in each tank
+  rep(times = nfish)
+```
+
+# Source tracking for PI samples
+
+## Subset data
+
+Subset metadata.
+
+```{r}
+mtd_pi <- filter(mtd, Compartment == "PI") %>%
+  # split PI samples based on Tank and fish id
+  group_split(Tank, FishID) %>%
+  # assign water sample to each tank
+  map2(wt, ., ~bind_rows(.x, .y)) 
+
+# add feed sample
+mtd_pi_ref <- purrr::map(mtd_pi[1:12], ~bind_rows(f_ref, .x)) # REF
+mtd_pi_im <- purrr::map(mtd_pi[13:23], ~bind_rows(f_im, .x)) # IM
+
+# combine metadata
+mtd_pi <- c(mtd_pi_ref, mtd_pi_im) %>%
+  purrr::map(~column_to_rownames(.x, "SampleID"))
+
+# modify metadata to comply with the required input format of FEAST
+mtd_pi_feast <- list()
+
+for (i in c("PID", "PIM")) {
+  mtd_pi_feast[[i]] <- purrr::map(
+    mtd_pi, 
+    function(x)
+    select(x, SampleType) %>%
+    rename(Env = SampleType) %>%
+    # use PID or PIM as sink
+    mutate(SourceSink = ifelse(grepl(i, Env), "Sink", "Sources"),
+           id         = ifelse(SourceSink == "Sink", 1, NA))) 
+}
+```
+
+Subset otu table.
+
+```{r}
+otu_pi <- purrr::map(mtd_pi, ~otu[rownames(.x), ])
+```
+
+## Source tracking
+
+```{r, results='hide'}
+src_pi <- map2(
+  list(otu_pi, otu_pi), 
+  mtd_pi_feast, 
+  function(x, y) {
+    map2(
+      x, 
+      y, 
+      function(.x, .y) 
+      FEAST(C = .x, metadata = .y, different_sources_flag = 0, 
+      dir_path = here("data/intermediate/source_tracking/"),
+      # use "SampleType_SampleID" as the prefix of sink samples
+      outfile = paste0(.y[.y$SourceSink == "Sink", ][1, "Env"], 
+                      "_",
+                      rownames(.y[.y$SourceSink == "Sink", ]))
+        )
+      )
+    }
+  )
+```
+
+## Tidy outputs
+
+```{r}
+# change column names of the outputs
+src_pi <- purrr::map(src_pi, function(x) {
+  purrr::map(x, function(.x) setNames(.x, gsub("AqFl1.*\\_", "", colnames(.x)))
+      )
+    }
+  )
+
+# merge outputs into a dataframe
+src_pi_df <- map_dfr(
+  c(src_pi[[1]][1:12], src_pi[[1]][13:23], src_pi[[2]][1:12], src_pi[[2]][13:23]),
+  function(x) 
+  bind_rows(x) %>%
+  rownames_to_column("Sink") %>%
+  mutate(Sink = gsub("AqFl1.*\\_", "", Sink)) %>%
+  pivot_longer(-Sink, names_to = "Sources", values_to = "Contribution"))
+
+```
+
+# Source tracking for DI samples
+
+## Subset metadata
+
+```{r}
+mtd_di <- filter(mtd, !SampleType %in% c("Water", "Feed")) %>%
+  # split DI samples based on Tank and fish id
+  group_split(Tank, FishID) %>%
+  # assign water sample to each tank
+  map2(wt, ., ~bind_rows(.x, .y)) 
+
+# add feed sample
+mtd_di_ref <- purrr::map(mtd_di[1:12], ~bind_rows(f_ref, .x)) # REF
+mtd_di_im <- purrr::map(mtd_di[13:23], ~bind_rows(f_im, .x)) # IM
+
+# combine metadata
+mtd_di <- c(mtd_di_ref, mtd_di_im) %>%
+  purrr::map(~column_to_rownames(.x, "SampleID"))
+
+# modify metadata to comply with the required input format of FEAST
+mtd_di_feast <- list()
+
+for (i in c("DID", "DIM")) {
+  mtd_di_feast[[i]] <- purrr::map(
+    mtd_di, 
+    function(x)
+      select(x, SampleType) %>%
+      rename(Env = SampleType) %>%
+      # use DID or DIM as sink
+      mutate(SourceSink = ifelse(grepl(i, Env), "Sink", "Sources"),
+             id         = ifelse(SourceSink == "Sink", 1, NA))) 
+}
+```
+
+## Subset otu table
+
+```{r}
+otu_di <- purrr::map(mtd_di, ~otu[rownames(.x), ])
+```
+
+## Source tracking
+
+```{r, results='hide'}
+src_di <- map2(
+  list(otu_di, otu_di), 
+  mtd_di_feast, 
+  function(x, y) {
+    map2(
+      x, 
+      y, 
+      function(.x, .y) 
+        FEAST(C = .x, metadata = .y, different_sources_flag = 0, 
+              dir_path = here("data/intermediate/source_tracking/"),
+              # use "SampleType_SampleID" as the prefix of sink samples
+              outfile = paste0(.y[.y$SourceSink == "Sink", ][1, "Env"], 
+                               "_",
+                               rownames(.y[.y$SourceSink == "Sink", ]))
+        )
+    )
+  }
+)
+```
+
+## Tidy outputs
+
+```{r}
+# change column names of the outputs
+src_di <- purrr::map(src_di, function(x) {
+  purrr::map(x, function(.x) setNames(.x, gsub("AqFl1.*\\_", "", colnames(.x)))
+      )
+    }
+  )
+
+# merge outputs into a dataframe
+src_di_df <- map_dfr(
+  c(src_di[[1]][1:12], src_di[[1]][13:23], src_di[[2]][1:12], src_di[[2]][13:23]),
+  function(x) 
+    bind_rows(x) %>%
+    rownames_to_column("Sink") %>%
+    mutate(Sink = gsub("AqFl1.*\\_", "", Sink)) %>%
+    pivot_longer(-Sink, names_to = "Sources", values_to = "Contribution"))
+
+```
+
+# Merge data
+
+```{r}
+src <- bind_rows(src_pi_df, src_di_df) %>%
+  mutate(
+    Sources = factor(
+      Sources, 
+      levels = c("Feed", "Water", "REF-PID", "REF-PIM", "REF-DID", "REF-DIM", 
+                 "IM-PID", "IM-PIM", "IM-DID", "IM-DIM", "Unknown")),
+    Sink = factor(
+      Sink, 
+      levels = c("REF-PID", "REF-PIM", "REF-DID", "REF-DIM", 
+                 "IM-PID", "IM-PIM", "IM-DID", "IM-DIM")),
+    Contribution = round(Contribution * 100, 1))
+```
+
+# Plotting
+
+## Make plots
+
+```{r}
+p_list <- lapply(
+  group_split(src, Sink),
+  function(x) 
+  {
+    # calculate mean contribution of different microbial sources
+    df <- group_by(x, Sink, Sources) %>% 
+      summarise(Contribution = mean(Contribution)) %>% 
+      mutate(Contribution = round(Contribution, 1))
+    
+    # define color scheme
+    if(grepl("DI", unique(x$Sink))){
+      col <- c(brewer.pal(n = 5, name = "Paired"), "grey")
+    } else {
+      col <- c(brewer.pal(n = 3, name = "Paired"), "grey")
+    }
+    
+    # make plot
+    ggplot(df, aes(x = Sink, y = Contribution, fill = Sources, label = Contribution)) +
+      geom_bar(stat = "identity") +
+      geom_text(data = subset(df, Contribution != 0), size = 3,
+                position = position_stack(vjust = 0.5)) +
+      scale_fill_manual(values = col) + 
+      scale_y_continuous(limits = c(0, 100), breaks = 0:5*20) +
+      labs(x = "", y = "Source proportions (%)") +
+      theme_minimal()
+  }
+)
+```
+
+## Assemble plots
+
+```{r, fig.width=10}
+# assemble plots
+plot_grid(plotlist = p_list, nrow = 2)
+
+# export plot
+ggsave(here("result/figure/Figure 2.tiff"), width = 10, height = 5.5,
+       units = "in", dpi = 300, compression = "lzw")
+
+```
+
+# Session information
+
+```{r session-info}
+sessionInfo()
+```
