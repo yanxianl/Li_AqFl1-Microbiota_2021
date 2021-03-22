@@ -2,12 +2,14 @@
 .Rhistory
 .RData
 
+
 data/raw/casava-18-paired-end-demultiplexed*/*
 data/reference/*silva*
 data/reference/*.biom
 
 code/*_cache
 code/*_files
+code/.ipynb_checkpoints
 
 
 
