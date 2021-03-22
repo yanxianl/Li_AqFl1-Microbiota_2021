@@ -1,0 +1,9 @@
+#OTU ID	AqFl1-109	AqFl1-110	AqFl1-111	AqFl1-131	AqFl1-132
+D_0__Bacteria;D_1__Proteobacteria;D_2__Gammaproteobacteria;D_3__Pseudomonadales;D_4__Pseudomonadaceae;D_5__Pseudomonas;D_6__Pseudomonas aeruginosa	0.042	0.042	0.042	0.042	0.042
+D_0__Bacteria;D_1__Proteobacteria;D_2__Gammaproteobacteria;D_3__Enterobacteriales;D_4__Enterobacteriaceae;D_5__Escherichia;D_6__Escherichia coli	0.101	0.101	0.101	0.101	0.101
+D_0__Bacteria;D_1__Proteobacteria;D_2__Gammaproteobacteria;D_3__Enterobacteriales;D_4__Enterobacteriaceae;D_5__Salmonella;D_6__Salmonella enterica	0.104	0.104	0.104	0.104	0.104
+D_0__Bacteria;D_1__Firmicutes;D_2__Bacilli;D_3__Lactobacillales;D_4__Lactobacillaceae;D_5__Lactobacillus;D_6__Lactobacillus fermentum	0.184	0.184	0.184	0.184	0.184
+D_0__Bacteria;D_1__Firmicutes;D_2__Bacilli;D_3__Lactobacillales;D_4__Enterococcaceae;D_5__Enterococcus;D_6__Enterococcus faecalis	0.099	0.099	0.099	0.099	0.099
+D_0__Bacteria;D_1__Firmicutes;D_2__Bacilli;D_3__Bacillales;D_4__Staphylococcaceae;D_5__Staphylococcus;D_6__Staphylococcus aureus	0.155	0.155	0.155	0.155	0.155
+D_0__Bacteria;D_1__Firmicutes;D_2__Bacilli;D_3__Bacillales;D_4__Listeriaceae;D_5__Listeria;D_6__Listeria monocytogenes	0.141	0.141	0.141	0.141	0.141
+D_0__Bacteria;D_1__Firmicutes;D_2__Bacilli;D_3__Bacillales;D_4__Bacillaceae;D_5__Bacillus;D_6__Bacillus subtilis 	0.174	0.174	0.174	0.174	0.174
