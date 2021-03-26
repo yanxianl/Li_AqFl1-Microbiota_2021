@@ -32,6 +32,7 @@ Load packages.
 library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
 library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
 library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN v1.1.1  
+library(ggpubr) # 'ggplot2' Based Publication Ready Plots, CRAN v0.4.0
 library(ggh4x) # Hacks for 'ggplot2', CRAN v0.1.2.1 
 library(ggtext) # Improved Text Rendering Support for 'ggplot2', CRAN v0.1.1
 library(PerformanceAnalytics) # Econometric Tools for Performance and Risk Analysis, CRAN v2.0.4
@@ -52,7 +53,12 @@ Load data.
 ps <- readRDS(here("data/intermediate/qiime2R/phyloseq.rds"))
 
 # filter samples
-ps <- subset_samples(ps, !SampleType %in% c("Extraction-blank", "PCR-blank", "Mock"))
+ps <- ps %>%
+  # remove control samples
+  subset_samples(!SampleType %in% c("Extraction-blank", "PCR-blank", "Mock")) %>%
+  # remove technical replicates
+  subset_samples(!(IsTechnicalReplicate == "yes" & PCRBatch == 2))
+
 
 # change OTU names for easy display
 indx <- formatC(1:ntaxa(ps), width = nchar(ntaxa(ps)), format = "d", flag = "0")
@@ -64,9 +70,9 @@ txnm <- tax_table(ps) %>% as("matrix") %>% as.data.frame()
 mtd <- data.frame(sample_data(ps), check.names = FALSE)
 ```
 
-# Overview of taxonomy assignments
+# Taxonomic assignment overview
 
-First of all, let's look at the coverage of taxonomy assignments at different levels.
+First of all, let's look at the coverage of taxonomic assignments at different rank levels.
 
 ```{r}
 txnm_assg <- txnm %>%
@@ -86,19 +92,21 @@ txnm_assg %>%
 
 We can tell that the majority of OTUs were assigned at the genus level whereas only `r txnm_assg[7, 3]` of OTUs got a species-level annotation.
 
-# Taxonomic composition of mock samples
+# Taxa barplot
 
-Import and tidy expected mock composition
+## Mock
+
+### Expected mock composition
 
 ```{r}
 mock_exp <- read_tsv(here("data/reference/mock_expected.tsv")) 
 
-mock_exp <- rename(mock_exp[, 1:2], tax_exp = 1, abnd_exp = 2) %>%
-  arrange(tax_exp) %>%
-  mutate(tax_exp = gsub("D_0.*D_6__", "", tax_exp)) # prune taxonomy to the lowest level
+mock_exp <- rename(mock_exp[, 1:2], taxa_exp = 1, abnd_exp = 2) %>%
+  arrange(taxa_exp) %>%
+  mutate(taxa_exp = gsub("D_0.*D_6__", "", taxa_exp)) # prune taxonomy to the lowest level
 ```
 
-Import and tidy observed mock composition
+### Observed mock composition
 
 ```{r}
 mock_obs <- read_qza(here("data/intermediate/qiime2/97otu/quality-control/mock-observed-l7-rel.qza"))
@@ -110,29 +118,30 @@ mock_obs <- mock_obs$data %>%
          tax_obs = gsub("D_0.*D_5__|;__", "", tax_obs)) # genus level
 ```
 
-Merge expected and observed mock composition
+### Merge data
 
 ```{r}
 mock <- bind_cols(mock_exp, mock_obs) %>%
   mutate(gram_staining = c("(G+)", "(G+)", "(G+)", "(G+)", "(G+)", "(G-)", "(G-)", "(G-)"),
-         taxa = paste0("*", tax_exp, "*", " ", gram_staining, " / ", "*", tax_obs, "*")) %>% 
-  select(-tax_exp, -gram_staining, -tax_obs) %>%
+         taxa = paste0("*", taxa_exp, "*", " ", gram_staining, " / ", "*", tax_obs, "*")) %>% 
+  select(-taxa_exp, -gram_staining, -tax_obs) %>%
   mutate(taxa = factor(taxa, levels = unique(taxa))) %>% 
   # use percentage as unit for relative abundance
   mutate_if(is.numeric, ~(100 * .x)) %>% 
   mutate_if(is.numeric, ~round(.x, 1))
 ```
 
-Correlation plot
+### Correlation plot
 
 ```{r}
-chart.Correlation(mock[, !(colnames(mock) == "taxa")], histogram = FALSE, pch = 19)
+mock[, !(colnames(mock) == "taxa")] %>%
+  rename(Expected = abnd_exp) %>%
+  chart.Correlation(histogram = FALSE, pch = 19)
 ```
 
-Stacked barplot
+### Stacked barplot
 
 ```{r, fig.width=8, fig.height=5}
-# plot
 bar_mock <- mock %>% 
   gather(key = "type", value = "abundance", -taxa) %>%
   ggplot(aes(x = type, y = abundance, fill = taxa, label = abundance)) +
@@ -146,19 +155,21 @@ bar_mock <- mock %>%
   theme_minimal() +
   theme(axis.text.x = element_blank(),
         legend.text = element_markdown()) # align legend text to left
-
 bar_mock
+```
 
-# export figure
+### Figure S1
+
+```{r}
 ggsave(here("result/figure/Figure S1.tiff"), width = 8, height = 5, 
        units = "in", dpi = 300, compression = "lzw")
 ```
 
-# Taxonomic composition of biological samples
+## Biological samples
 
-## Stacked bar plots
+### Top10 genera
 
-Make a table containing top 10 most abundant taxa at genus level.
+Get top 10 most abundant taxa at genus level.
 
 ```{r}
 taxa_tab <- Summarize.Taxa(otu, txnm)$Genus %>% Make.Percent() 
@@ -167,7 +178,7 @@ Others <- colSums(taxa_tab[11:nrow(taxa_tab), ])
 taxa_tab <- rbind(taxa_tab[1:10, ], Others)
 ```
 
-Tidy dataframe for making stacked bar plots.
+Tidy taxa table for making stacked bar plots.
 
 ```{r}
 taxa_tab <- as.data.frame(taxa_tab) %>%
@@ -199,16 +210,46 @@ taxa_tab <- as.data.frame(taxa_tab) %>%
   inner_join(rownames_to_column(mtd, "SampleID"), by = "SampleID")
 ```
 
-Make stacked bar plots.
+### Stacked barplot
 
 ```{r, fig.width=10}
+# define color scheme
+col <- c("grey", brewer.pal(n = 10, name = "Paired"))
+
+# digesta samples
+taxa_bar_digesta <- filter(taxa_tab, SampleOrigin == "Digesta") %>%
+  ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
+  geom_bar(stat = "identity") +
+  labs(x = "", y = "Relative abundance (%)") +
+  scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
+  scale_fill_manual(values = col) +
+  facet_nested(~ SampleOrigin + Diet + Compartment, scales = "free_x", nest_line = TRUE) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        strip.background = element_blank(),
+        legend.position = "none") 
+
+# mucosa samples  
+taxa_bar_mucosa <- filter(taxa_tab, SampleOrigin == "Mucosa") %>%
+  ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
+  geom_bar(stat = "identity") +
+  labs(x = "", y = "") +
+  scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
+  scale_fill_manual(values = col) +
+  facet_nested(~ SampleOrigin + Diet + Compartment, scales = "free_x", nest_line = TRUE) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        strip.background = element_blank(),
+        legend.position = "none") 
+
 # feed samples
 taxa_bar_feed <- filter(taxa_tab, SampleType == "Feed") %>%
   mutate(Diet = ifelse(SampleName == "FeedREF", "REF", "IM"),
          Diet = factor(Diet, levels = c("REF", "IM"))) %>%
   ggplot(aes(x = SampleName, y = Abundance, fill = Genus)) +
   geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "Sample", y = "") +
+  labs(x = "", y = "") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
   facet_nested(~ SampleOrigin + Diet, scales = "free_x", nest_line = TRUE) +
@@ -232,51 +273,27 @@ taxa_bar_water <- filter(taxa_tab, SampleType == "Water") %>%
         strip.background = element_blank(),
         legend.position = "none") 
 
-# samples from fish fed the REF diet 
-taxa_bar_ref <- filter(taxa_tab, Diet == "REF") %>%
-  # remove technical replicates
-  filter(!(IsTechnicalReplicate == "yes" & PCRBatch == 2)) %>%
-  ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat = "identity") +
-  labs(x = "", y = "Relative abundance (%)") +
-  scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
-  scale_fill_manual(values = col) +
-  facet_nested(~ Diet + SampleOrigin + Compartment, scales = "free_x", nest_line = TRUE) +
-  theme_bw() +
-  theme(axis.text.x = element_blank(),
-        strip.background = element_blank(),
-        legend.position = "none") 
-
-# samples from fish fed the IM diet 
-taxa_bar_im <- filter(taxa_tab, Diet == "IM") %>%
-  filter(!(IsTechnicalReplicate == "yes" & PCRBatch == 2)) %>%
-  ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat = "identity") +
-  labs(x = "", y = "") +
-  scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
-  scale_fill_manual(values = col) +
-  facet_nested(~ Diet + SampleOrigin + Compartment, scales = "free_x", nest_line = TRUE) +
-  theme_bw() +
-  theme(axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        strip.background = element_blank(),
-        legend.position = "none") 
-
 # assemble plots
 taxa_bar <- plot_grid(
-  taxa_bar_ref, 
-  taxa_bar_feed + theme(plot.margin = margin(l = -0.5, unit = "cm")),
-  taxa_bar_im + theme(plot.margin = margin(l = -0.4, unit = "cm")),
-  taxa_bar_water + theme(plot.margin = margin(l = -0.3, unit = "cm")), 
-  nrow =  1, align = 'h', axis = "tb", 
-  rel_widths = c(7.5, 1.6, 7.5, 1.4)) 
+  taxa_bar_digesta + theme(plot.margin = margin(b = -0.5, unit = "cm")), 
+  taxa_bar_mucosa  + theme(plot.margin = margin(l = 0, b = -0.5, unit = "cm")),
+  taxa_bar_feed    + theme(plot.margin = margin(l = -0.5, b = -0.5, unit = "cm")),
+  taxa_bar_water   + theme(plot.margin = margin(l = -0.5, b = -0.5, unit = "cm")), 
+  nrow =  1, align = 'h', axis = "tb", rel_widths = c(7.5, 7.5, 1.6, 1.4)) 
 
-taxa_bar 
+# make a joint x axis label for the assembled plot
+xlab <- ggdraw() + 
+  draw_label("Samples", fontface = "plain") + 
+  theme(plot.margin = margin(t = -0.5, unit = "cm"))
+
+# add the x axis label
+taxa_bar <- plot_grid(taxa_bar, xlab, ncol = 1, rel_heights = c(10, 1))
+taxa_bar
 ```
 
-## Customize figure legend
+### Modify legend
 
-Make custom legend using flextable.
+Modify legend using flextable.
 
 ```{r}
 lgnd <- unique(taxa_tab[ , c("Genus", "Phylum")]) %>%
@@ -296,7 +313,7 @@ lgnd <- unique(taxa_tab[ , c("Genus", "Phylum")]) %>%
   border_remove() %>% # remove borders
   theme_booktabs() %>% # apply table style
   hline(i = c(1, 2), border = fp_border(width = 2), part = "body") %>% # draw horizontal lines
-  hline_top(part = "all", border = fp_border(color = "white")) # remove horizontal line in the table header
+  hline_top(part = "header", border = fp_border(color = "white")) # remove horizontal line in the table header
 
 # convert flextable into a ggplot object
 lgnd <- as_raster(lgnd)
@@ -306,40 +323,187 @@ lgnd <- ggplot() +
   annotation_custom(grid::rasterGrob(lgnd, y = unit(0.5, "npc"))) # top right: y = unit(0.72, "npc")
 ```
 
-## Add custom legend
+### Figure 1
 
-Add custom legend to the plot.
-
-```{r, fig.width=10}
+```{r, fig.width=10, fig.height=6}
 taxa_bar <- plot_grid(taxa_bar, lgnd, nrow =  1, align = 'h', rel_widths = c(4, 1)) 
 taxa_bar
+
+# export plot
+ggsave(here("result/figure/Figure 1.tiff"), width = 10, height = 6,
+       units = "in", dpi = 300, compression = "lzw")
+```
+
+# Core microbiota
+
+## Compute core microbiota
+
+Data preprocessing.
+
+```{r}
+# subset phyloseq
+ps_core <- list(
+  REF = subset_samples(ps, Diet == "REF" & !SampleOrigin %in% c("Feed", "Water")),
+  IM = subset_samples(ps, Diet == "IM" & !SampleOrigin %in% c("Feed", "Water")))
+
+# data filtering and transformation
+ps_core <- ps_core %>%
+  # remove features with zero count in all samples
+  map(~filter_taxa(.x, function(x) sum(x > 0) > 0, TRUE)) %>%
+  # aggregate OTUs at genus level
+  #map(~tax_glom(.x, "Genus")) %>%
+  # total sum scaling
+  map(~transform_sample_counts(.x, function(x){x / sum(x)}))
+```
+
+## Core microbiota heatmap
+
+### Initial heatmap
+
+```{r, results='hide'}
+# basic plot
+coreHmp <- map(seq_along(ps_core), function(x){
+  if (names(ps_core)[x] == "REF"){
+    plot_core(ps_core[[x]], 
+      plot.type = "heatmap", 
+      colours = rev(brewer.pal(5, "RdBu")),
+      prevalences = seq(0.1, 1, 0.1), 
+      detections = 9,
+      min.prevalence = 0.5) 
+  } else {
+    plot_core(ps_core[[x]], 
+      plot.type = "heatmap", 
+      colours = rev(brewer.pal(5, "RdBu")),
+      prevalences = seq(0.1, 1, 0.1), 
+      detections = 8,
+      min.prevalence = 0.5) 
+    }
+  }
+)
+
+names(coreHmp) <- c("REF", "IM")  
+
+# change aesthetics
+coreHmp <- map(seq_along(coreHmp), function(x){
+  coreHmp[[x]] + 
+  scale_fill_gradientn(
+    colours = rev(brewer.pal(5, "RdBu")),
+    breaks = seq(0, 1, 0.1), 
+    labels = formatC(seq(0, 1, 0.1), format = "f", digits = 1), 
+    limits = c(0, 1)) +
+  labs(title = names(coreHmp)[x], x = "Detection threshold (%)", y = "") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+  }
+)  
+```
+
+### Format x-axis text
+
+```{r}
+# get plot data
+coreHmp_dt <- map(coreHmp, ~.x$data)
+
+# format x axis labels
+xlab <- map(coreHmp_dt, function(x){
+  unique(x$DetectionThreshold) %>% 
+    as.character() %>% 
+    as.numeric()
+  }
+) 
+
+xlab <- map(xlab, ~formatC(.x * 100, format = "f", digits = 1))   
+
+# add custom labels
+coreHmp <- map2(coreHmp, xlab, function(x, y) x + scale_x_discrete(labels = y)) 
+```
+
+### Format y-axis text
+
+```{r}
+# add the taxonomy of core taxa
+coreHmp_dt <- map(coreHmp_dt, function(x){
+  txnm[levels(x$Taxa), ] %>%
+  rownames_to_column("Taxa") %>%
+  inner_join(x, by = "Taxa") %>%
+  # get the best taxonomic annotations for core taxa
+  mutate(
+    Class = ifelse(is.na(Class)|Class == "NA"|grepl("uncultured|Ambiguous|metagenome", Class), 
+                   Phylum, 
+                   Class),
+    Order = ifelse(is.na(Order)|Order == "NA"|grepl("uncultured|Ambiguous|metagenome", Order), 
+                   Class, 
+                   Order),
+    Family = ifelse(is.na(Family)|Family == "NA"|grepl("uncultured|Ambiguous|metagenome", Family), 
+                    Order, 
+                    Family),
+    Genus = ifelse(is.na(Genus)|Genus == "NA"|grepl("uncultured|Ambiguous|metagenome", Genus), 
+                   Family, 
+                   Genus)) %>%
+  select(Taxa, Genus, DetectionThreshold, Prevalence) %>%
+  # italicize taxa names using R expressions
+  mutate(Taxa = paste0(Taxa, ":italic(", Genus, ")"),
+         # some taxa names contain space; tilde (~) is recognized as "space" in R expressions
+         Taxa = gsub("\\s+", "~", Taxa), 
+         Taxa = gsub("g__", "", Taxa),
+         Taxa = factor(Taxa, levels = unique(Taxa))) %>%
+  select(-Genus)
+  }
+)
+
+# replace the data
+coreHm <- map2(coreHmp, coreHmp_dt, function(x, y) x$data <- y)
+
+# parse y axis text as R expression
+ylab <- map(coreHmp_dt, ~parse(text = gsub("OTU.*:", "", levels(.x$Taxa))))  
+
+# make new plots
+coreHmp <- map2(coreHmp, ylab, function(x, y) x + scale_y_discrete(labels = y)) 
+```
+
+### Figure 2
+
+```{r, fig.width=8.5, fig.height=10}
+coreHmp <- ggarrange(
+  plotlist = coreHmp, nrow = 1, labels = c("OTUs", ""), label.y = 0.55, 
+  font.label = list(size = 10, face = "plain"), legend = "right", common.legend = TRUE)
+
+coreHmp
+
+# export plot
+ggsave(here("result/figure/Figure 2.tiff"), width = 8.5, height = 10,
+       units = "in", dpi = 300, compression = "lzw")
 ```
 
 # Microbial overlap
 
-## Compute microbial overlap
+## Number of OTUs shared
 
-Compute OTU prevalence in each sample type.
+### Compute OTU prevalence
 
 ```{r}
-prvl_ls <- list()
+# total sum scaling
+ps_tss <- transform_sample_counts(ps, function(x){x / sum(x)})
 
-for (i in levels(mtd$SampleType)[c(1:8, 10)]) {
-    prvl_ls[[i]] <- subset_samples(ps, SampleType == i) %>%
-      prevalence(detection = 10, count = TRUE, include.lowest = TRUE)
+# compute OTU prevalence
+prvl <- list()
+
+for (i in c("REF-PIM", "REF-DIM", "IM-PIM", "IM-DIM", "Water")) {
+    prvl[[i]] <- subset_samples(ps_tss, SampleType == i) %>%
+      prevalence(detection = 0.001, count = TRUE, include.lowest = TRUE)
 }
 
 for (i in c("FeedREF", "FeedIM")) {
-    prvl_ls[[i]] <- subset_samples(ps, SampleName == i) %>%
-      prevalence(detection = 10, count = TRUE, include.lowest = TRUE)
+    prvl[[i]] <- subset_samples(ps_tss, SampleName == i) %>%
+      prevalence(detection = 0.001, count = TRUE, include.lowest = TRUE)
 }
 ```
 
-Compute microbial overlap.
+### Compute OTU overlap
 
 ```{r}
-ovrl <- bind_cols(prvl_ls) %>%
-  pivot_longer("REF-PID":"IM-DIM", 
+ovrl <- bind_cols(prvl) %>%
+  pivot_longer("REF-PIM":"IM-DIM", 
                names_to = "SampleType", 
                values_to = "Intestine") %>%
   # compute OTU overlap between water/feed and intestinal samples
@@ -370,215 +534,148 @@ ovrl <- bind_cols(prvl_ls) %>%
                  "Shared", "Unique to intestine", "Absent")),
     Diet = ifelse(grepl("REF", SampleType), "REF", "IM"),
     Diet = factor(Diet, levels = c("REF", "IM")),
-    Compartment = ifelse(grepl("PI", SampleType), "PI", "DI"),
-    Compartment = factor(Compartment, levels = c("PI", "DI")),
-    SampleOrigin = ifelse(grepl("PID|DID", SampleType), "Digesta", "Mucosa"),
-    SampleOrigin = factor(SampleOrigin, levels = c("Digesta", "Mucosa")))
+    Site = ifelse(grepl("PIM", SampleType), "PIM", "DIM"),
+    Site = factor(Site, levels = c("PIM", "DIM")))
 ```
 
-## Plotting
+### Plotting
+
+Plot microbial overlap between feed and intestinal samples.
 
 ```{r}
-# plot microbial overlap between feed and intestinal samples
 ovrl_bar_feed <- ovrl %>%
   filter(OverlapType == "FeedOverlapREF" & Diet == "REF" |
          OverlapType == "FeedOverlapIM"  & Diet == "IM") %>%
   filter(Category != "Absent") %>%
   ggplot(aes(x = SampleType, y = n, fill = Category, label = n)) +
   geom_bar(stat = "identity") +
-  geom_text(position = position_stack(vjust = 0.5), size = 3) +
-  labs(x = "Sample type", y = "Number of OTUs") +
+  geom_text(position = position_stack(vjust = 0.5), color = "white", size = 4) +
+  labs(x = "Comparment", y = "Number of OTUs") +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05))) + 
-  scale_fill_manual(values = c("#A6CEE3", "grey", "#1F78B4")) +
-  facet_nested(~ Diet + SampleOrigin + Compartment, scales = "free_x", nest_line = TRUE) +
+  scale_fill_manual(values = c("#B2DF8A", "grey50", "#33A02C")) +
+  facet_nested(~ Diet + Site, scales = "free_x", nest_line = TRUE) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         strip.background = element_blank(),
-        legend.position = "top",
         legend.title = element_blank(),
         legend.margin = margin(0, 0, 0, 0),
-        legend.box.margin = margin(5, -10, -10, -10))  
+        legend.box.margin = margin(0, 0, 0, -5))  
+```
 
-# plot microbial overlap between water and intestinal samples
+Plot microbial overlap between water and intestinal samples.
+
+```{r}
 ovrl_bar_water <- ovrl %>% 
   filter(OverlapType == "WaterOverlap", 
          Category != "Absent") %>%
   ggplot(aes(x = SampleType, y = n, fill = Category, label = n)) +
   geom_bar(stat = "identity") +
-  geom_text(position = position_stack(vjust = 0.5), size = 3) +
-  labs(x = "Sample type", y = "Number of OTUs") +
+  geom_text(position = position_stack(vjust = 0.5), color = "white", size = 4) +
+  labs(x = "Comparment", y = "Number of OTUs") +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05))) + 
-  scale_fill_manual(values = c("#B2DF8A", "grey", "#33A02C")) +
-  facet_nested(~ Diet + SampleOrigin + Compartment, scales = "free_x", nest_line = TRUE) +
+  scale_fill_manual(values = c("#A6CEE3", "grey50", "#1F78B4")) +
+  facet_nested(~ Diet + Site, scales = "free_x", nest_line = TRUE) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         strip.background = element_blank(),
-        legend.position = "top",
         legend.title = element_blank(),
         legend.margin = margin(0, 0, 0, 0),
-        legend.box.margin = margin(5, -10, -10, -10))  
+        legend.box.margin = margin(0, 0, 0, -5))  
 ```
 
 Assemble plots.
 
-```{r, fig.width=8}
-ovrl_bar <- plot_grid(ovrl_bar_feed, ovrl_bar_water, nrow =  1, align = 'h', rel_widths = c(1, 1)) 
-ovrl_bar
+```{r, fig.width=8, fig.height=4}
+plot_grid(ovrl_bar_feed, ovrl_bar_water, nrow =  1) 
 ```
 
-# Core microbiota
+## Abundance of OTUs shared
 
-## Compute core microbiota
+### Compute shared OTU abundance 
 
-Data preprocessing.
+Compute the abundance of shared OTUs between feed and intestinal mucosa.
 
 ```{r}
-# subset intestinal microbiota samples
-ps_int <- ps %>% subset_samples(is.na(Diet) == FALSE) 
+shared_feed <- map(c("FeedREF", "FeedIM"), function(x) {
+  prune_taxa(names(which(prvl[[x]] == 1)), ps_tss) %>% sample_sums()
+  }
+)
 
-# remove features with zero count in all samples
-ps_int <- filter_taxa(ps_int, function(x) sum(x > 0) > 0, TRUE) 
-
-# total sum scaling
-ps_int_tss <- transform_sample_counts(ps_int, function(x){x / sum(x)}) 
-```
-
-Compute core features.
-
-```{r}
-core_otu <- core_members(ps_int_tss, detection = 0.001, prevalence = 0.5)
-```
-
-Core feature taxonomy.
-
-```{r}
-txnm[core_otu, ] %>% 
-  select(-Kingdom) %>%
-  datatable( 
-    options = list(columnDefs = list(list(className = 'dt-left', targets = c(0:6)))
-                   )
-            )
-```
-
-Core feature abundance in each sample.
-
-```{r}
-core_otu_abundance <- core(ps_int_tss, detection = 0.001, prevalence = 0.5) %>%
-  sample_sums() 
-
-data.frame(core_otu_abundance) %>%
-  mutate(core_otu_abundance = round(core_otu_abundance, 2)) %>%
-  bind_cols(mtd[sample_names(ps_int_tss), ]) %>%
-  select(core_otu_abundance, SampleType) %>%
-  datatable( 
-  options = list(columnDefs = list(list(className = 'dt-left', targets = c(0:2)))
-                 )
-            )
-```
-
-## Core microbiota heatmap
-
-Make an initial core microbiota heatmap.
-
-```{r, fig.height=8, fig.width=4}
-core_htmp <- plot_core(
-  ps_int_tss, 
-  plot.type = "heatmap", 
-  colours = rev(brewer.pal(5, "RdBu")),
-  prevalences = seq(0.1, 1, 0.1), 
-  detections = 10,
-  min.prevalence = 0.5) 
-
-core_htmp <- core_htmp + 
-  scale_fill_gradientn(
-    colours = rev(brewer.pal(5, "RdBu")),
-    breaks  = seq(0, 1, 0.1), 
-    labels  = formatC(seq(0, 1, 0.1), format = "f", digits = 1), 
-    limits  = c(0, 1)) +
-  labs(x = "Detection threshold (%)", y = "OTUs") +
-  theme_bw() +
-  theme(legend.margin=margin(0,0,0,0), legend.box.margin=margin(0,-5,0,-5))  
-
-core_htmp
-```
-
-Format x axis text.
-
-```{r, fig.height=8, fig.width=4}
-# get plot data
-core_htmp_dt <- core_htmp$data
-
-# format x axis labels
-thrs <- unique(core_htmp_dt$DetectionThreshold) %>%
-  as.character() %>%
-  as.numeric()
+names(shared_feed) <- c("REF", "IM")
   
-axis_text_x <- round(thrs * 100, 1) %>% as.character()
-
-# add custom labels
-core_htmp <- core_htmp + scale_x_discrete(labels = axis_text_x) 
-core_htmp
+# combine with metadata
+shared_feed <- map(seq_along(shared_feed), function(x){
+  data.frame(Abundance = shared_feed[[x]]) %>%
+  rownames_to_column("SampleID") %>%
+  inner_join(rownames_to_column(mtd, "SampleID"), by = "SampleID") %>%
+  filter(Diet == names(shared_feed)[x] & !SampleOrigin %in% c("Feed", "Water")) %>%
+  mutate(Compartment = ifelse(Compartment == "PI", "PIM", "DIM"),
+         Compartment = factor(Compartment, levels = c("PIM", "DIM"))) %>%
+  mutate(Abundance = round(100 * Abundance, 1))}) %>%
+  bind_rows()
 ```
 
-Add taxonomy to the y axis text.
+Compute the abundance of shared OTUs between water and intestinal mucosa.
 
-```{r, fig.height=8, fig.width=6}
-# add the taxonomy of core OTUs
-core_htmp_dt1 <- txnm[levels(core_htmp_dt$Taxa), ] %>%
-  rownames_to_column("Taxa") %>%
-  inner_join(core_htmp_dt, by = "Taxa") %>%
-  # get the best taxonomic annotations for core OTUs
-  mutate(
-    Class = ifelse(is.na(Class)|Class == "NA"|grepl("uncultured|Ambiguous|metagenome", Class), 
-                   Phylum, 
-                   Class),
-    Order = ifelse(is.na(Order)|Order == "NA"|grepl("uncultured|Ambiguous|metagenome", Order), 
-                   Class, 
-                   Order),
-    Family = ifelse(is.na(Family)|Family == "NA"|grepl("uncultured|Ambiguous|metagenome", Family), 
-                    Order, 
-                    Family),
-    Genus = ifelse(is.na(Genus)|Genus == "NA"|grepl("uncultured|Ambiguous|metagenome", Genus), 
-                   Family, 
-                   Genus)) %>%
-  select(Taxa, Genus, DetectionThreshold, Prevalence) %>%
-  # italicize taxa names using R expressions
-  mutate(Taxa = paste0(Taxa, ":italic(", Genus, ")"),
-         # some taxa names contain space; tilde (~) is recognized as "space" in R expressions
-         Taxa = gsub("\\s+", "~", Taxa), 
-         Taxa = gsub("g__", "", Taxa),
-         Taxa = factor(Taxa, levels = unique(Taxa))) %>%
-  select(-Genus)
+```{r}
+shared_water <- prune_taxa(names(which(prvl[["Water"]] > 0)), ps_tss) %>% sample_sums()
 
-# replace the data
-core_htmp$data <- core_htmp_dt1
-
-# parse y axis text as R expression
-axis_text_y <- parse(text = gsub("OTU.*:", "", levels(core_htmp_dt1$Taxa))) 
-
-# make a new plot
-core_htmp <- core_htmp + scale_y_discrete(labels = axis_text_y)
-core_htmp
+# combine with metadata
+shared_water <- data.frame(Abundance = shared_water) %>%
+  rownames_to_column("SampleID") %>%
+  inner_join(rownames_to_column(mtd, "SampleID"), by = "SampleID") %>%
+  filter(!SampleOrigin %in% c("Feed", "Water")) %>%
+  mutate(Compartment = ifelse(Compartment == "PI", "PIM", "DIM"),
+         Compartment = factor(Compartment, levels = c("PIM", "DIM"))) %>%
+  mutate(Abundance = round(100 * Abundance, 1))
 ```
 
-# Figure 1
+### Plotting
+
+Abundance of shared OTUs between feed and intestinal mucosa.
+
+```{r}
+bp_shared_feed <- ggplot(shared_feed, aes(x = Compartment, y = Abundance)) +
+  geom_boxplot(fill = "grey50", width = 0.5) +
+  facet_nested(~ Diet + Compartment, scales = "free_x", nest_line = TRUE) +
+  labs(x = "Comparment", y = "Relative abundance (%)") +
+  scale_y_continuous(limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))) + 
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        strip.background = element_blank(),
+        legend.position = "none")
+```
+
+Abundance of shared OTUs between water and intestinal mucosa
+
+```{r}
+bp_shared_water <- shared_water %>%
+  ggplot(aes(x = Compartment, y = Abundance)) +
+    geom_boxplot(fill = "grey50", width = 0.5) +
+    facet_nested(~ Diet + Compartment, scales = "free_x", nest_line = TRUE) +
+    labs(x = "Comparment", y = "Relative abundance (%)") +
+    scale_y_continuous(limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))) + 
+    theme_bw() +
+    theme(axis.text.x = element_blank(),
+          strip.background = element_blank(),
+          legend.position = "none") 
+```
 
 Assemble plots.
 
-```{r, fig.width=14, fig.height=8}
-fig1_ab <- plot_grid(taxa_bar, ovrl_bar, ncol =  1, align = 'v',  
-                     rel_heights = c(1.2, 1), labels = c("a", "b")) 
-
-fig1 <- plot_grid(fig1_ab, core_htmp, ncol =  2, align = 'h', 
-                  rel_widths = c(1.6, 1), labels = c("", "c"))
-
-fig1
+```{r, fig.width=6, fig.height=4}
+plot_grid(bp_shared_feed, bp_shared_water, nrow =  1) 
 ```
 
-Export plot
+## Figure 3
 
-```{r}
-ggsave(here("result/figure/Figure 1.tiff"), fig1, width = 14, height = 8,
+```{r, fig.width=7, fig.height=8}
+plot_grid(ovrl_bar_feed, bp_shared_feed, ovrl_bar_water, bp_shared_water, 
+          ncol = 2, align = "h", axis = "tb", rel_widths = c(1.5, 1), 
+          labels = c("a", "", "b", "")) 
+
+# export plot
+ggsave(here("result/figure/Figure 3.tiff"), width = 7, height = 8,
        units = "in", dpi = 300, compression = "lzw")
 ```
 
