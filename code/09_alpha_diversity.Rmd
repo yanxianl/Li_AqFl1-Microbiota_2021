@@ -42,9 +42,6 @@ library(picante) # Integrating Phylogenies and Ecology, CRAN v1.8.2
 library(afex) # Analysis of Factorial Experiments, CRAN v0.28-1 
 library(ggResidpanel) # Panels and Interactive Versions of Diagnostic Plots using 'ggplot2', CRAN v0.3.0 
 library(emmeans) # Estimated Marginal Means, aka Least-Squares Means, CRAN v1.5.3 
-
-# Set seed
-set.seed(1910)
 ```
 
 Load data
