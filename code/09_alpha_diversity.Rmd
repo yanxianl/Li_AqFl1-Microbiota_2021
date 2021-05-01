@@ -3,6 +3,8 @@ title: "Alpha diversity"
 author: "Yanxian Li<br><small>Department of Paraclinical Sciences<br>Faculty of Veterinary Medicine<br>Norwegian University of Life Sciences</small>"
 date: "<small>`r Sys.Date()`</small>"
 output:
+  pdf_document: 
+    latex_engine: xelatex
   html_document:
     toc: yes
     toc_depth: 3
@@ -12,8 +14,6 @@ output:
     code_folding: show
     theme: cerulean
     self_contained: true
-  pdf_document: 
-    latex_engine: xelatex
   word_document: default  
 ---
 
@@ -148,10 +148,39 @@ lme_dgs <- lapply(alph_dgs_spl, function(x) {
 )
 ```
 
-### Model outputs
+One of the fitted models is singular. Let's look at the estimated random effects.
 
 ```{r}
-lme_dgs
+lapply(lme_dgs, function(x) summary(x)$varcor) 
+```
+
+The standard deviation of the random effect `FishID` is zero for Shannon's index. We update the model by removing the term `1|FishID`.
+
+```{r, message=TRUE}
+lme_dgs1 <- lapply(lme_dgs, function(x){
+  if(isSingular(x$full_model) == TRUE) { # remove random effect FishID if the model is singular
+    mixed(log1p(value) ~ Diet * Compartment + (1|Tank), 
+          data = x$data, method = "KR")
+  } else {
+    x
+  }
+}
+)
+```
+
+The updated model is no longer singular. Robust results should hold in both maximal and reduced model. Therefore, let us compare the pattern of significant and non-significant effects before and after removing the random effect `FishID`.
+
+```{r}
+left_join(
+  nice(lme_dgs[["Shannon's index"]]), 
+  nice(lme_dgs1[["Shannon's index"]]), 
+  by = "Effect", suffix = c("_full", "_reduced"))
+```
+
+The pattern of significant and non-significant effect is basically the same for both models. Before proceeding to model diagnostics, let's look at model outputs.
+
+```{r}
+lme_dgs1
 ```
 
 ### Model diagnostics
@@ -160,14 +189,14 @@ Here we use the *ggResidpanel* package to produce a panel of plots for residual 
 
 ```{r, results='hide'}
 lapply(
-  seq_along(lme_dgs), 
+  seq_along(lme_dgs1), 
   function(x) 
   {
     # extract titles 
-    main <- ggdraw() + draw_label(names(lme_dgs)[x], fontface='bold')
+    main <- ggdraw() + draw_label(names(lme_dgs1)[x], fontface='bold')
     
     # make residual diagnostic plots
-    resid_panel <- resid_panel(lme_dgs[[x]]$full_model, plots = "all", qqbands = TRUE)
+    resid_panel <- resid_panel(lme_dgs1[[x]]$full_model, plots = "all", qqbands = TRUE)
     
     # assemble plots
     plot_grid(main, resid_panel, ncol = 1, rel_heights = c(1, 10))
@@ -175,15 +204,15 @@ lapply(
 )
 ```
 
-Everything looks fine. We proceed to post-hoc tests.
+Everything looks ok. We proceed to post-hoc tests.
 
 ### Post-hoc tests
 
-When interactions between main factors are significant, marginal means averaged over the levels of other covariates in the model can be misleading. A good practice is to do conditional contrasts.
+When the interaction between main factors is significant, marginal means averaged over the levels of other covariates in the model can be misleading. A good practice is to do conditional contrasts.
 
 ```{r}
 # filter alpha-diversity indices showing significant interactions between the main effects
-intr_dgs <- lapply(lme_dgs, function(x) {
+intr_dgs <- lapply(lme_dgs1, function(x) {
   ifelse(x$anova_table["Diet:Compartment", "Pr(>F)"] < 0.05, TRUE, FALSE)
   }
 )
@@ -195,11 +224,11 @@ cc_dgs <- mapply(function(x, y){
 
   # make conditional contrasts if the interaction is significant
   if (y == TRUE){
-    contrast(emm, method = "consec", simple = "each", combine = TRUE, adjust = "mvt") %>%
+    contrast(emm, method = "consec", simple = "each", combine = TRUE, adjust = "holm") %>%
     summary()
   }
 },
-  x = lme_dgs, 
+  x = lme_dgs1, 
   y = intr_dgs
 )
 
@@ -232,7 +261,7 @@ The fitted models are singular. Let's look at the estimated random effects.
 lapply(lme_mcs, function(x) summary(x)$varcor) 
 ```
 
-The standard deviation of random effect `FishID` is zero for all the alpha indices. The standard deviation of random effect `Tank` is also zero for Faith's PD. We first update the models by removing the random effect `FishID`.
+The standard deviation of random effect `FishID` is near or equals zero. We update the models by removing the term `1|FishID`.
 
 ```{r, message=TRUE}
 lme_mcs1 <- lapply(alph_mcs_spl, function(x) {
@@ -240,11 +269,9 @@ lme_mcs1 <- lapply(alph_mcs_spl, function(x) {
         data = x, method = "KR")
   }
 )
-
-lme_mcs1
 ```
 
-Robust results should hold in both maximal and reduced model. Therefore, let us compare the pattern of significant and non-significant effects before and after removing the random effect `FishID`.
+Now we compare the pattern of significant and non-significant effects before and after removing the random effect `FishID` to make sure that results obtained are robust.
 
 ```{r}
 map2_dfr(
@@ -254,7 +281,11 @@ map2_dfr(
   .id = "alpha_diversity")
 ```
 
-The pattern of significant and non-significant effect is largely the same for both models. However, the reduced model for Faith's PD is still singular after removing the random effect `FishID`. To respect the experimental design, We just keep the random effect `Tank` in the model anyway. Now We proceed to model diagnostics.
+The pattern of significant and non-significant effect is basically the same for both models. Let's look at model outputs before proceeding to model diagnostics.
+
+```{r}
+lme_mcs1
+```
 
 ### Model diagnostics
 
@@ -275,7 +306,7 @@ lapply(
 )
 ```
 
-The residual plot of Shannon's index doesn't look so good. Everything else looks fine. We proceed to post-hoc tests.
+The residual plots of Shannon's index alert cautions. Everything else looks fine. We proceed to post-hoc tests.
 
 ### Post-hoc tests
 
@@ -295,7 +326,7 @@ cc_mcs <- mapply(function(x, y){
 
   # Make conditional contrasts if the interaction is significant
   if (y == TRUE){
-    contrast(emm, method = "consec", simple = "each", combine = TRUE, adjust = "mvt") %>%
+    contrast(emm, method = "consec", simple = "each", combine = TRUE, adjust = "holm") %>%
     summary()
   }
 },
@@ -348,11 +379,11 @@ t_test
 
 ## Figure 4
 
-Gather *p*-values of main effects and their interaction.
+Gather *p*-values of main effects.
 
 ```{r}
 # digesta samples 
-p_main_dgs <- lme_dgs %>% 
+p_main_dgs <- lme_dgs1 %>% 
   map_dfr(~rownames_to_column(.x$anova_table, "term"), .id = "alph_indx") %>%
   mutate(SampleOrigin = "Digesta")
 
@@ -420,8 +451,8 @@ p_cc <- bind_rows(p_cc_dgs, p_cc_mcs) %>%
     # position of p value on the x axis 
     p_xpos = (start + end) / 2,
     # position of horizontal bar and p value on the y axis 
-    y = c(0.8, 0.85, 0.95, 1.0, 0.9, 0.95, 1.05, 1.1,
-          4.2, 4.4, 3.75, 4.0, 4.6, 4.9, 4.25, 4.5)) 
+    y = c(0.82, 0.86, 0.96, 1.0, 0.90, 0.94, 1.04, 1.08,
+          4.2, 4.4, 3.75, 4.0, 4.6, 4.8, 4.25, 4.5)) 
 ```
 
 Alpha diversity plots.

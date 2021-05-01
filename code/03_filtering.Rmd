@@ -103,7 +103,15 @@ ps <- phyloseq(sample_data(column_to_rownames(mtd, "SampleID")),
                otu_table(as.matrix(count_tab), taxa_are_rows = TRUE),
                tax_table(as.matrix(tax_tab)))
 
-ps_tss <- transform_sample_counts(ps, function(x){x / sum(x)}) # total sum scaling
+# total sum scaling
+ps_tss <- transform_sample_counts(ps, function(x){
+  if(sum(x) == 0){ # avoid producing naN when sample count is zero
+    x 
+  } else {
+    x / sum(x)
+  }
+}
+) 
 ```
 
 # Taxonomy-based filtering

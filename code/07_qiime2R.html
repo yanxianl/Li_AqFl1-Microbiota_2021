@@ -11,7 +11,7 @@
 
 <meta name="author" content="Yanxian Li Department of Paraclinical Sciences Faculty of Veterinary Medicine Norwegian University of Life Sciences" />
 
-<meta name="date" content="2021-03-22" />
+<meta name="date" content="2021-05-01" />
 
 <title>Import QIIME2 artifacts into R</title>
 
@@ -255,7 +255,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Import QIIME2 artifacts into R</h1>
 <h4 class="author">Yanxian Li<br><small>Department of Paraclinical Sciences<br>Faculty of Veterinary Medicine<br>Norwegian University of Life Sciences</small></h4>
-<h4 class="date"><small>2021-03-22</small></h4>
+<h4 class="date"><small>2021-05-01</small></h4>
 
 </div>
 
@@ -454,7 +454,7 @@ saveRDS(ord_mcsFdWt, file = here(&quot;data/intermediate/qiime2R/beta_diversity_
 <div id="session-information" class="section level1" number="6">
 <h1 number="6"><span class="header-section-number">6</span> Session information</h1>
 <pre class="r"><code>sessionInfo()</code></pre>
-<pre><code>## R version 4.0.3 (2020-10-10)
+<pre><code>## R version 4.0.5 (2021-03-31)
 ## Platform: x86_64-w64-mingw32/x64 (64-bit)
 ## Running under: Windows 10 x64 (build 19041)
 ## 
@@ -472,28 +472,28 @@ saveRDS(ord_mcsFdWt, file = here(&quot;data/intermediate/qiime2R/beta_diversity_
 ## other attached packages:
 ##  [1] phyloseq_1.34.0 qiime2R_0.99.35 forcats_0.5.1   stringr_1.4.0  
 ##  [5] dplyr_1.0.5     purrr_0.3.4     readr_1.4.0     tidyr_1.1.3    
-##  [9] tibble_3.1.0    ggplot2_3.3.3   tidyverse_1.3.0 here_1.0.1     
-## [13] knitr_1.31     
+##  [9] tibble_3.1.1    ggplot2_3.3.3   tidyverse_1.3.1 here_1.0.1     
+## [13] knitr_1.33     
 ## 
 ## loaded via a namespace (and not attached):
 ##   [1] colorspace_2.0-0    ellipsis_0.3.1      rprojroot_2.0.2    
 ##   [4] htmlTable_2.1.0     XVector_0.30.0      base64enc_0.1-3    
-##   [7] fs_1.5.0            rstudioapi_0.13     DT_0.17            
+##   [7] fs_1.5.0            rstudioapi_0.13     DT_0.18            
 ##  [10] fansi_0.4.2         lubridate_1.7.10    xml2_1.3.2         
-##  [13] codetools_0.2-16    splines_4.0.3       ade4_1.7-16        
-##  [16] Formula_1.2-4       jsonlite_1.7.2      broom_0.7.5        
-##  [19] cluster_2.1.0       dbplyr_2.1.0        png_0.1-7          
-##  [22] compiler_4.0.3      httr_1.4.2          backports_1.2.1    
-##  [25] assertthat_0.2.1    Matrix_1.3-2        cli_2.3.1          
-##  [28] htmltools_0.5.1.1   prettyunits_1.1.1   tools_4.0.3        
+##  [13] codetools_0.2-18    splines_4.0.5       ade4_1.7-16        
+##  [16] Formula_1.2-4       jsonlite_1.7.2      broom_0.7.6        
+##  [19] cluster_2.1.1       dbplyr_2.1.1        png_0.1-7          
+##  [22] compiler_4.0.5      httr_1.4.2          backports_1.2.1    
+##  [25] assertthat_0.2.1    Matrix_1.3-2        cli_2.5.0          
+##  [28] htmltools_0.5.1.1   prettyunits_1.1.1   tools_4.0.5        
 ##  [31] igraph_1.2.6        gtable_0.3.0        glue_1.4.2         
 ##  [34] reshape2_1.4.4      Rcpp_1.0.6          Biobase_2.50.0     
-##  [37] cellranger_1.1.0    jquerylib_0.1.3     zCompositions_1.3.4
+##  [37] cellranger_1.1.0    jquerylib_0.1.4     zCompositions_1.3.4
 ##  [40] vctrs_0.3.6         Biostrings_2.58.0   rhdf5filters_1.2.0 
-##  [43] multtest_2.46.0     ape_5.4-1           nlme_3.1-149       
+##  [43] multtest_2.46.0     ape_5.5             nlme_3.1-152       
 ##  [46] iterators_1.0.13    xfun_0.22           rvest_1.0.0        
 ##  [49] lifecycle_1.0.0     zlibbioc_1.36.0     MASS_7.3-53.1      
-##  [52] scales_1.1.1        hms_1.0.0           parallel_4.0.3     
+##  [52] scales_1.1.1        hms_1.0.0           parallel_4.0.5     
 ##  [55] biomformat_1.18.0   rhdf5_2.34.0        RColorBrewer_1.1-2 
 ##  [58] yaml_2.2.1          NADA_1.6-1.1        gridExtra_2.3      
 ##  [61] sass_0.3.1          rpart_4.1-15        latticeExtra_0.6-29
@@ -504,13 +504,13 @@ saveRDS(ord_mcsFdWt, file = here(&quot;data/intermediate/qiime2R/beta_diversity_
 ##  [76] htmlwidgets_1.5.3   tidyselect_1.1.0    plyr_1.8.6         
 ##  [79] magrittr_2.0.1      R6_2.5.0            IRanges_2.24.0     
 ##  [82] generics_0.1.0      Hmisc_4.5-0         DBI_1.1.1          
-##  [85] mgcv_1.8-34         pillar_1.5.1        haven_2.3.1        
-##  [88] foreign_0.8-81      withr_2.4.1         survival_3.2-10    
-##  [91] nnet_7.3-14         modelr_0.1.8        crayon_1.4.1       
+##  [85] mgcv_1.8-35         pillar_1.6.0        haven_2.4.1        
+##  [88] foreign_0.8-81      withr_2.4.1         survival_3.2-11    
+##  [91] nnet_7.3-15         modelr_0.1.8        crayon_1.4.1       
 ##  [94] utf8_1.2.1          rmarkdown_2.7       jpeg_0.1-8.1       
-##  [97] progress_1.2.2      grid_4.0.3          readxl_1.3.1       
-## [100] data.table_1.14.0   vegan_2.5-7         reprex_1.0.0       
-## [103] digest_0.6.27       stats4_4.0.3        munsell_0.5.0      
+##  [97] progress_1.2.2      grid_4.0.5          readxl_1.3.1       
+## [100] data.table_1.14.0   vegan_2.5-7         reprex_2.0.0       
+## [103] digest_0.6.27       stats4_4.0.5        munsell_0.5.0      
 ## [106] bslib_0.2.4</code></pre>
 </div>
 

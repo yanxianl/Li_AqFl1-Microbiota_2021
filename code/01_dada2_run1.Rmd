@@ -18,7 +18,7 @@ output:
 ---
 
 ```{r style, echo = FALSE, message = FALSE}
-require(knitr) 
+require(knitr)
 opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = TRUE)
 ```
 
@@ -29,13 +29,13 @@ opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = TRUE)
 First we load the necessary packages.
 
 ```{r, message = FALSE, warning = FALSE}
-library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1  
+library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
 library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
-library(dada2) # Accurate, high-resolution sample inference from amplicon sequencing data, Bioconductor v1.18.0 
-library(plyr) # Tools for Splitting, Applying and Combining Data, CRAN v1.8.6 
+library(dada2) # Accurate, high-resolution sample inference from amplicon data, Bioconductor v1.18.0  
+library(plyr) # Tools for Splitting, Applying and Combining Data, CRAN v1.8.6
 library(DT) # A Wrapper of the JavaScript Library 'DataTables', CRAN v0.17 
-library(plotly) # Create Interactive Web Graphics via 'plotly.js', CRAN v4.9.3 
-library(biomformat) # An interface package for the BIOM file format, Bioconductor v1.18.0 
+library(plotly) # Create Interactive Web Graphics via 'plotly.js', CRAN v4.9.3
+library(biomformat) # An interface package for the BIOM file format, Bioconductor v1.18.0
 
 # Set seed
 set.seed(1910)
@@ -131,8 +131,8 @@ The error rates for each possible transition (A→C, A→G, ...) are shown. Poin
 We are now ready to apply [the core sample inference algorithm](https://www.nature.com/articles/nmeth.3869#methods) to the data. By default, the `dada` function processes each sample independently. However, pooling information across samples can increase sensitivity to sequence variants that may be present at very low frequencies in multiple samples. Here, we set `pool = TRUE` to retain the singletons for the downstream species richness estimation.
 
 ```{r dada}
-dadaFs <- dada(filtFs, err = errF, pool = TRUE, multithread = TRUE) 
-dadaRs <- dada(filtRs, err = errR, pool = TRUE, multithread = TRUE)
+dadaFs <- dada(filtFs, err = errF, pool = FALSE, multithread = TRUE) 
+dadaRs <- dada(filtRs, err = errR, pool = FALSE, multithread = TRUE)
 ```
 
 Inspect the `dada-class` object
@@ -208,7 +208,7 @@ ggplot(seqLen, aes(x = seqLen)) +
 The core `dada` method corrects substitution and indel errors, but chimeras remain. Fortunately, the accuracy of sequence variants after denoising makes identifying chimeric ASVs simpler than when dealing with fuzzy OTUs. Chimeric sequences are identified if they can be exactly reconstructed by combining a left-segment and a right-segment from two more abundant "parent" sequences. As we used `pool = TRUE` during the sample inference, we should use `method = "pooled"` for the chimera removal.
 
 ```{r remove-chimeras, message = FALSE}
-seqtab.nochim <- removeBimeraDenovo(seqtab, method = "pooled", multithread = TRUE, verbose = TRUE)
+seqtab.nochim <- removeBimeraDenovo(seqtab, method = "consensus", multithread = TRUE, verbose = TRUE)
 sum(seqtab.nochim)/sum(seqtab)
 ```
 
@@ -282,4 +282,3 @@ The processing of raw sequence data into an ASV table is based on the online [DA
 ```{r session-info}
 sessionInfo()
 ```
-
