@@ -509,19 +509,19 @@ ovrl <- bind_cols(prvl) %>%
   # compute OTU overlap between water/feed and intestinal samples
   mutate(
     WaterOverlap = case_when(
-      Water >  1 & Intestine >  1 ~ "Shared",
-      Water >  1 & Intestine <= 1 ~ "Unique to water",
-      Water <= 1 & Intestine >  1 ~ "Unique to intestine",
+      Water >  0 & Intestine >  0 ~ "Shared",
+      Water >  0 & Intestine == 0 ~ "Unique to water",
+      Water == 0 & Intestine >  0 ~ "Unique to intestine",
       TRUE ~ "Absent"),
     FeedOverlapREF = case_when(
-      FeedREF == 1 & Intestine >  1 ~ "Shared",
-      FeedREF == 1 & Intestine <= 1 ~ "Unique to feed",
-      FeedREF == 0 & Intestine >  1 ~ "Unique to intestine",
+      FeedREF == 1 & Intestine >  0 ~ "Shared",
+      FeedREF == 1 & Intestine == 0 ~ "Unique to feed",
+      FeedREF == 0 & Intestine >  0 ~ "Unique to intestine",
       TRUE ~ "Absent"),
     FeedOverlapIM = case_when(
-      FeedIM == 1 & Intestine >  1 ~ "Shared",
-      FeedIM == 1 & Intestine <= 1 ~ "Unique to feed",
-      FeedIM == 0 & Intestine >  1 ~ "Unique to intestine",
+      FeedIM == 1 & Intestine >  0 ~ "Shared",
+      FeedIM == 1 & Intestine == 0 ~ "Unique to feed",
+      FeedIM == 0 & Intestine >  0 ~ "Unique to intestine",
       TRUE ~ "Absent")) %>%
   pivot_longer(WaterOverlap:FeedOverlapIM, 
                names_to = "OverlapType", 
@@ -639,7 +639,7 @@ bp_shared_feed <- ggplot(shared_feed, aes(x = Compartment, y = Abundance)) +
   geom_boxplot(fill = "grey50", width = 0.5) +
   geom_point() +
   facet_nested(~ Diet + Compartment, scales = "free_x", nest_line = TRUE) +
-  labs(x = "Comparment", y = "Relative abundance (%)") +
+  labs(x = "Comparment", y = "Relative abundance of shared OTUs (%)") +
   scale_y_continuous(limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))) + 
   theme_bw() +
   theme(axis.text.x = element_blank(),
@@ -655,7 +655,7 @@ bp_shared_water <- shared_water %>%
     geom_boxplot(fill = "grey50", width = 0.5) +
     geom_point() +
     facet_nested(~ Diet + Compartment, scales = "free_x", nest_line = TRUE) +
-    labs(x = "Comparment", y = "Relative abundance (%)") +
+    labs(x = "Comparment", y = "Relative abundance of shared OTUs (%)") +
     scale_y_continuous(limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))) + 
     theme_bw() +
     theme(axis.text.x = element_blank(),
