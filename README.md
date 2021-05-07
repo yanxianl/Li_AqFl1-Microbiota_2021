@@ -2,11 +2,12 @@
   [![Launch Rstudio Binder](http://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/yanxianl/Li_AqFl2-Microbiota_ASM_2020/master?urlpath=rstudio)
 <!-- badges: end -->
 
-## Differential response of digesta- and mucosa-associated intestinal microbiota to dietary black soldier fly (*Hermetia illucens*) larvae meal in seawater phase Atlantic salmon (*Salmo salar*)
+## Reproducible changes in the intestinal microbiota of Atlantic salmon fed diets containing black soldier fly larvae meal
 
-Intestinal digesta is commonly used for studying responses of microbiota to dietary shifts, yet evidence is accumulating that it represents an incomplete view of the intestinal microbiota. In a 16-week seawater feeding trial, Atlantic salmon (*Salmo salar*) were fed either a commercially-relevant reference diet or an insect meal diet containing ~15% black soldier fly (*Hermetia illucens*) larvae meal. The digesta- and mucosa-associated distal intestinal microbiota were profiled by 16S rRNA gene sequencing. Regardless of diet, we observed substantial differences between digesta- and mucosa-associated intestinal microbiota. Microbial richness and diversity were much higher in the digesta than the mucosa. The insect meal diet altered the distal intestinal microbiota resulting in higher microbial richness and diversity. The diet effect, however, depended on the sample origin. Digesta-associated intestinal microbiota showed more pronounced changes than the mucosa-associated microbiota. Lastly, multivariate association analyses identified two mucosa-enriched taxa, *Brevinema andersonii* and unclassified *Spirochaetaceae*, associated with the expression of genes related to immune responses and barrier function in the distal intestine, respectively. Overall, our data clearly indicate that responses in digesta- and mucosa-associated microbiota to dietary inclusion of insect meal differ, with the latter being more resilient to dietary changes.
+Abstract here.
 
 ### Overview
+
 Here's an overview of the file organization in this project.
 ```
 root
@@ -43,7 +44,8 @@ root
 ├── LICENSE.md  
 └── README.md
 ```
-### How to regenerate the figures/tables
+### How to regenerate figures and tables
+
 Computationally lightweight RMarkdown files ([03, 05-09]_\*.Rmd) can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed and ready to go! The instance has limited computational resources (1~2GB RAM) and is not intended for intensive computation (e.g., 01_dada2.Rmd).
 
 To reproduce the figures and tables published with the paper, run the following RMarkdown files:
@@ -62,7 +64,9 @@ To reproduce the figures and tables published with the paper, run the following 
   * Figure 5, Figure S3-8
   
 ### How to regenerate this repository
+
 #### Dependencies and locations
+
 * [Miniconda3](https://docs.conda.io/en/latest/miniconda.html) should be located in your HOME directory.
 * [grabseqs (0.7.0)](https://github.com/louiejtaylor/grabseqs) should be installed via the Miniconda3.
 * [QIIME2 (2020.2)](https://docs.qiime2.org/2020.2/) should be installed within a Miniconda3 environment named as `qiime2-2020.2`.
@@ -107,7 +111,8 @@ To reproduce the figures and tables published with the paper, run the following 
   * venn_1.9 [CRAN]
   
 #### Running the analysis
-All the codes should be run from the project's root directory.
+
+All the code should be run from the project's root directory.
 
 1.Download or clone this github repository to your project's root directory.
 ```bash
@@ -160,9 +165,11 @@ Rscript -e "rmarkdown::render('code/09_metadata_association.Rmd')"
 ```
 
 ### To-do
+
 * Add a driver script to automate all the analysis, e.g., `make ` or `snakemake`.
 
 ### Acknowledgements
-The initial file and directory structure of this project is based on the [template](https://github.com/SchlossLab/new_project/releases/latest) shared by [Dr. Pat Schloss](http://www.schlosslab.org/) to improve the reproducibility of microbiome data analysis. For trainings and tutorials on reproducible data analysis in microbiome research, check the [*Riffomonas*](http://www.riffomonas.org/) project.
 
-The R package [holepunch](https://karthik.github.io/holepunch/) was used to make the RMarkdown files [binder](https://mybinder.org/)-ready. 
+The project organization was inspired by the Riffomonas project, maintained by Dr. Pat Schloss. visit the [*Riffomonas*](http://www.riffomonas.org/) website for tutorials on reproducible data analysis in microbiome research. 
+
+The R package [holepunch](https://karthik.github.io/holepunch/) was used to make this repository [binder](https://mybinder.org/)-ready. 
