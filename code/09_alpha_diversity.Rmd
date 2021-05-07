@@ -42,6 +42,9 @@ library(picante) # Integrating Phylogenies and Ecology, CRAN v1.8.2
 library(afex) # Analysis of Factorial Experiments, CRAN v0.28-1 
 library(ggResidpanel) # Panels and Interactive Versions of Diagnostic Plots using 'ggplot2', CRAN v0.3.0 
 library(emmeans) # Estimated Marginal Means, aka Least-Squares Means, CRAN v1.5.3 
+
+# Set seed
+set.seed(1910)
 ```
 
 Load data
@@ -148,39 +151,10 @@ lme_dgs <- lapply(alph_dgs_spl, function(x) {
 )
 ```
 
-One of the fitted models is singular. Let's look at the estimated random effects.
+### Model outputs
 
 ```{r}
-lapply(lme_dgs, function(x) summary(x)$varcor) 
-```
-
-The standard deviation of the random effect `FishID` is zero for Shannon's index. We update the model by removing the term `1|FishID`.
-
-```{r, message=TRUE}
-lme_dgs1 <- lapply(lme_dgs, function(x){
-  if(isSingular(x$full_model) == TRUE) { # remove random effect FishID if the model is singular
-    mixed(log1p(value) ~ Diet * Compartment + (1|Tank), 
-          data = x$data, method = "KR")
-  } else {
-    x
-  }
-}
-)
-```
-
-The updated model is no longer singular. Robust results should hold in both maximal and reduced model. Therefore, let us compare the pattern of significant and non-significant effects before and after removing the random effect `FishID`.
-
-```{r}
-left_join(
-  nice(lme_dgs[["Shannon's index"]]), 
-  nice(lme_dgs1[["Shannon's index"]]), 
-  by = "Effect", suffix = c("_full", "_reduced"))
-```
-
-The pattern of significant and non-significant effect is basically the same for both models. Before proceeding to model diagnostics, let's look at model outputs.
-
-```{r}
-lme_dgs1
+lme_dgs
 ```
 
 ### Model diagnostics
@@ -189,14 +163,14 @@ Here we use the *ggResidpanel* package to produce a panel of plots for residual 
 
 ```{r, results='hide'}
 lapply(
-  seq_along(lme_dgs1), 
+  seq_along(lme_dgs), 
   function(x) 
   {
     # extract titles 
-    main <- ggdraw() + draw_label(names(lme_dgs1)[x], fontface='bold')
+    main <- ggdraw() + draw_label(names(lme_dgs)[x], fontface='bold')
     
     # make residual diagnostic plots
-    resid_panel <- resid_panel(lme_dgs1[[x]]$full_model, plots = "all", qqbands = TRUE)
+    resid_panel <- resid_panel(lme_dgs[[x]]$full_model, plots = "all", qqbands = TRUE)
     
     # assemble plots
     plot_grid(main, resid_panel, ncol = 1, rel_heights = c(1, 10))
@@ -204,15 +178,15 @@ lapply(
 )
 ```
 
-Everything looks ok. We proceed to post-hoc tests.
+Everything looks fine. We proceed to post-hoc tests.
 
 ### Post-hoc tests
 
-When the interaction between main factors is significant, marginal means averaged over the levels of other covariates in the model can be misleading. A good practice is to do conditional contrasts.
+When interactions between main factors are significant, marginal means averaged over the levels of other covariates in the model can be misleading. A good practice is to do conditional contrasts.
 
 ```{r}
 # filter alpha-diversity indices showing significant interactions between the main effects
-intr_dgs <- lapply(lme_dgs1, function(x) {
+intr_dgs <- lapply(lme_dgs, function(x) {
   ifelse(x$anova_table["Diet:Compartment", "Pr(>F)"] < 0.05, TRUE, FALSE)
   }
 )
@@ -224,11 +198,11 @@ cc_dgs <- mapply(function(x, y){
 
   # make conditional contrasts if the interaction is significant
   if (y == TRUE){
-    contrast(emm, method = "consec", simple = "each", combine = TRUE, adjust = "holm") %>%
+    contrast(emm, method = "consec", simple = "each", combine = TRUE, adjust = "mvt") %>%
     summary()
   }
 },
-  x = lme_dgs1, 
+  x = lme_dgs, 
   y = intr_dgs
 )
 
@@ -261,7 +235,7 @@ The fitted models are singular. Let's look at the estimated random effects.
 lapply(lme_mcs, function(x) summary(x)$varcor) 
 ```
 
-The standard deviation of random effect `FishID` is near or equals zero. We update the models by removing the term `1|FishID`.
+The standard deviation of random effect `FishID` is zero for all the alpha indices. The standard deviation of random effect `Tank` is also zero for Faith's PD. We first update the models by removing the random effect `FishID`.
 
 ```{r, message=TRUE}
 lme_mcs1 <- lapply(alph_mcs_spl, function(x) {
@@ -269,9 +243,11 @@ lme_mcs1 <- lapply(alph_mcs_spl, function(x) {
         data = x, method = "KR")
   }
 )
+
+lme_mcs1
 ```
 
-Now we compare the pattern of significant and non-significant effects before and after removing the random effect `FishID` to make sure that results obtained are robust.
+Robust results should hold in both maximal and reduced model. Therefore, let us compare the pattern of significant and non-significant effects before and after removing the random effect `FishID`.
 
 ```{r}
 map2_dfr(
@@ -281,11 +257,7 @@ map2_dfr(
   .id = "alpha_diversity")
 ```
 
-The pattern of significant and non-significant effect is basically the same for both models. Let's look at model outputs before proceeding to model diagnostics.
-
-```{r}
-lme_mcs1
-```
+The pattern of significant and non-significant effect is largely the same for both models. However, the reduced model for Faith's PD is still singular after removing the random effect `FishID`. To respect the experimental design, We just keep the random effect `Tank` in the model anyway. Now We proceed to model diagnostics.
 
 ### Model diagnostics
 
@@ -306,7 +278,7 @@ lapply(
 )
 ```
 
-The residual plots of Shannon's index alert cautions. Everything else looks fine. We proceed to post-hoc tests.
+The residual plot of Shannon's index doesn't look so good. Everything else looks fine. We proceed to post-hoc tests.
 
 ### Post-hoc tests
 
@@ -326,7 +298,7 @@ cc_mcs <- mapply(function(x, y){
 
   # Make conditional contrasts if the interaction is significant
   if (y == TRUE){
-    contrast(emm, method = "consec", simple = "each", combine = TRUE, adjust = "holm") %>%
+    contrast(emm, method = "consec", simple = "each", combine = TRUE, adjust = "mvt") %>%
     summary()
   }
 },
@@ -343,14 +315,13 @@ Aggregate alpha diversity of mucosa samples in each tank.
 
 ```{r}
 alph_tm <- filter(alph, SampleOrigin %in% c("Water", "Mucosa")) %>%
-  group_by(alph_indx, SampleOrigin, Diet, Compartment, Tank) %>%
+  group_by(alph_indx, SampleOrigin, Compartment, Tank) %>%
   summarise(value = mean(value)) %>%
   mutate(
     SampleType = case_when(
       Compartment == "PI" ~ "PIM",
       Compartment == "DI" ~ "DIM",
-      TRUE ~ "Water"),
-    SampleType = factor(SampleType, levels = c("Water", "PIM", "DIM"))) %>%
+      TRUE ~ "Water")) %>%
   ungroup() %>%
   select(-Compartment, -SampleOrigin)
 ```
@@ -360,18 +331,18 @@ Paired t-test.
 ```{r}
 t_test <- pivot_wider(alph_tm, names_from = SampleType, values_from = value) %>%
   pivot_longer(PIM:DIM, names_to = "SampleType", values_to = "value") %>%
-  group_by(alph_indx, Diet, SampleType) %>%
+  group_by(alph_indx, SampleType) %>%
   nest() %>%
   mutate(t_test = map(data, ~t.test(.x$Water, .x$value, paired = TRUE, alternative = "two.sided")),
          p_raw = map_dbl(t_test, ~pluck(.x, "p.value"))) %>%
-  group_by(alph_indx, Diet) %>%
+  group_by(alph_indx) %>%
   nest() %>%
   mutate(p_adj = map(data, ~p.adjust(.x$p_raw, method = "holm"))) %>%
   unnest(cols = c(data, p_adj)) %>%
   mutate(p_raw = formatC(p_raw, format = "f", digits = 3),
          p_adj = formatC(p_adj, format = "f", digits = 3),
          comparison = paste0("Water", "-", SampleType)) %>%
-  select(alph_indx, Diet, comparison, p_raw, p_adj)
+  select(alph_indx, comparison, p_raw, p_adj)
 
 t_test
 ```
@@ -380,11 +351,11 @@ t_test
 
 ## Figure 4
 
-Gather *p*-values of main effects.
+Gather *p*-values of main effects and their interaction.
 
 ```{r}
 # digesta samples 
-p_main_dgs <- lme_dgs1 %>% 
+p_main_dgs <- lme_dgs %>% 
   map_dfr(~rownames_to_column(.x$anova_table, "term"), .id = "alph_indx") %>%
   mutate(SampleOrigin = "Digesta")
 
@@ -452,14 +423,14 @@ p_cc <- bind_rows(p_cc_dgs, p_cc_mcs) %>%
     # position of p value on the x axis 
     p_xpos = (start + end) / 2,
     # position of horizontal bar and p value on the y axis 
-    y = c(0.82, 0.86, 0.96, 1.0, 0.90, 0.94, 1.04, 1.08,
-          4.2, 4.4, 3.75, 4.0, 4.6, 4.8, 4.25, 4.5)) 
+    y = c(0.8, 0.85, 0.95, 1.0, 0.9, 0.95, 1.05, 1.1,
+          4.2, 4.4, 3.75, 4.0, 4.6, 4.9, 4.25, 4.5)) 
 ```
 
-Make new alpha diversity plots.
+Alpha diversity plots.
 
 ```{r}
-plist_fig.4 <- lapply(levels(alph$alph_indx), function(x) {
+plist <- lapply(levels(alph$alph_indx), function(x) {
   # filter data
   alph_sub <- filter(alph, alph_indx == x)
   
@@ -524,19 +495,19 @@ Assemble plots.
 
 ```{r, fig.width=7, fig.height=11}
 plot_grid(
-  plist_fig.4[[1]] + 
+  plist[[1]] + 
     theme(axis.text.x = element_blank(), 
           legend.margin = margin(0, 0, 0, 0),
           legend.box.margin = margin(0, 0, -8, 0)),
-  plist_fig.4[[2]] + 
+  plist[[2]] + 
     theme(axis.text.x = element_blank(), 
           legend.position = "none",
           plot.margin = margin(t = -0.7, unit = "cm")),
-  plist_fig.4[[3]] + 
+  plist[[3]] + 
     theme(axis.text.x = element_blank(), 
           legend.position = "none",
           plot.margin = margin(t = -0.5, unit = "cm")),
-  plist_fig.4[[4]] + 
+  plist[[4]] + 
     theme(legend.position = "none",
           plot.margin = margin(t = -0.5, unit = "cm")) + 
     labs(x = "Diet"),
@@ -549,58 +520,44 @@ ggsave(here("result/figure/Figure 4.tiff"), width = 7, height = 11,
 
 ## Figure S2
 
-Make a dataframe for *p*-value annotation.
+Initial box plot.
 
 ```{r}
+bp_wt_mcs <- alph_tm %>%
+  mutate(SampleType = factor(SampleType, levels = c("Water", "PIM", "DIM"))) %>%
+  ggplot(aes(x = SampleType, y = value)) +
+  geom_boxplot(aes(color = SampleType)) +
+  geom_point(aes(color = SampleType)) +
+  facet_wrap(~alph_indx, scales = "free_y", nrow = 1) +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
+  scale_color_manual(values = c("grey50", brewer.pal(4, "Paired"))) +
+  labs(x = "Sample type", color = "Sample type") +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "none")
+
+bp_wt_mcs
+```
+
+Add *p* values.
+
+```{r, fig.width=8, fig.height=4}
+# make a dataframe for p value annotation
 p_t.test <- ungroup(t_test) %>%
   separate(comparison, sep = "-", c("start", "end")) %>%
-  mutate(
-    p_adj = paste0("italic(p) == ", p_adj),
-    y = c(85, 98, 125, 138, 
-          0.92, 0.96, 0.87, 0.91,
-          3.65, 3.8, 3.7, 3.85,
-          40, 43, 38, 41))
-```
+  mutate(p_adj = paste0("italic(p) == ", p_adj),
+  y = c(150, 160, 0.91, 0.94, 3.8, 3.9, 47, 50))
 
-Make initial plots.
-
-```{r}
-plist_fig.s2 <- lapply(levels(alph_tm$alph_indx), function(x) {
-  filter(alph_tm, alph_indx == x) %>%
-  ggplot(aes(x = SampleType, y = value)) +
-    geom_boxplot(aes(color = SampleType)) +
-    geom_point(aes(color = SampleType)) +
-    geom_signif(
-      data = filter(p_t.test, alph_indx == x),
-      aes(xmin = start, xmax = end, annotations = p_adj, y_position = y),
-      tip_length = 0.01,
-      textsize = 3,
-      parse = TRUE,
-      manual = T) +
-    facet_wrap(~Diet, nrow = 1) + 
-    scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
-    scale_color_manual(values = c("grey50", brewer.pal(4, "Paired"))) +
-    labs(x = "", y = x) +
-    theme_bw(base_size = 12) +
-    theme(legend.position = "none")
-  }
-)
-```
-
-Assemble plots.
-
-```{r, fig.width=8, fig.height=6}
-plot_grid(
-  plist_fig.s2[[1]] + theme(axis.text.x = element_blank()),
-  plist_fig.s2[[2]] + theme(axis.text.x = element_blank()),
-  plist_fig.s2[[3]] + theme(plot.margin = margin(t = -0.5, unit = "cm")) + 
-    labs(x = "Sample type"),
-  plist_fig.s2[[4]] + theme(plot.margin = margin(t = -0.5, unit = "cm")) + 
-    labs(x = "Sample type"),
-  ncol = 2, align = "v") 
+# add p value annotation
+bp_wt_mcs + geom_signif(
+  data = p_t.test,
+  aes(xmin = start, xmax = end, annotations = p_adj, y_position = y),
+  tip_length = 0.01,
+  textsize = 3,
+  parse = TRUE,
+  manual = T)
 
 # export plot
-ggsave(here("result/figure/Figure S2.tiff"), width = 8, height = 6,
+ggsave(here("result/figure/Figure S2.tiff"), width = 8, height = 4,
        units = "in", dpi = 300, compression = "lzw")
 ```
 
