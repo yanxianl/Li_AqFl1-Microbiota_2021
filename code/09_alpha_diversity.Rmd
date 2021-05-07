@@ -3,8 +3,6 @@ title: "Alpha diversity"
 author: "Yanxian Li<br><small>Department of Paraclinical Sciences<br>Faculty of Veterinary Medicine<br>Norwegian University of Life Sciences</small>"
 date: "<small>`r Sys.Date()`</small>"
 output:
-  pdf_document: 
-    latex_engine: xelatex
   html_document:
     toc: yes
     toc_depth: 3
@@ -14,6 +12,8 @@ output:
     code_folding: show
     theme: cerulean
     self_contained: true
+  pdf_document: 
+    latex_engine: xelatex
   word_document: default  
 ---
 
@@ -343,13 +343,14 @@ Aggregate alpha diversity of mucosa samples in each tank.
 
 ```{r}
 alph_tm <- filter(alph, SampleOrigin %in% c("Water", "Mucosa")) %>%
-  group_by(alph_indx, SampleOrigin, Compartment, Tank) %>%
+  group_by(alph_indx, SampleOrigin, Diet, Compartment, Tank) %>%
   summarise(value = mean(value)) %>%
   mutate(
     SampleType = case_when(
       Compartment == "PI" ~ "PIM",
       Compartment == "DI" ~ "DIM",
-      TRUE ~ "Water")) %>%
+      TRUE ~ "Water"),
+    SampleType = factor(SampleType, levels = c("Water", "PIM", "DIM"))) %>%
   ungroup() %>%
   select(-Compartment, -SampleOrigin)
 ```
@@ -359,18 +360,18 @@ Paired t-test.
 ```{r}
 t_test <- pivot_wider(alph_tm, names_from = SampleType, values_from = value) %>%
   pivot_longer(PIM:DIM, names_to = "SampleType", values_to = "value") %>%
-  group_by(alph_indx, SampleType) %>%
+  group_by(alph_indx, Diet, SampleType) %>%
   nest() %>%
   mutate(t_test = map(data, ~t.test(.x$Water, .x$value, paired = TRUE, alternative = "two.sided")),
          p_raw = map_dbl(t_test, ~pluck(.x, "p.value"))) %>%
-  group_by(alph_indx) %>%
+  group_by(alph_indx, Diet) %>%
   nest() %>%
   mutate(p_adj = map(data, ~p.adjust(.x$p_raw, method = "holm"))) %>%
   unnest(cols = c(data, p_adj)) %>%
   mutate(p_raw = formatC(p_raw, format = "f", digits = 3),
          p_adj = formatC(p_adj, format = "f", digits = 3),
          comparison = paste0("Water", "-", SampleType)) %>%
-  select(alph_indx, comparison, p_raw, p_adj)
+  select(alph_indx, Diet, comparison, p_raw, p_adj)
 
 t_test
 ```
@@ -455,10 +456,10 @@ p_cc <- bind_rows(p_cc_dgs, p_cc_mcs) %>%
           4.2, 4.4, 3.75, 4.0, 4.6, 4.8, 4.25, 4.5)) 
 ```
 
-Alpha diversity plots.
+Make new alpha diversity plots.
 
 ```{r}
-plist <- lapply(levels(alph$alph_indx), function(x) {
+plist_fig.4 <- lapply(levels(alph$alph_indx), function(x) {
   # filter data
   alph_sub <- filter(alph, alph_indx == x)
   
@@ -523,19 +524,19 @@ Assemble plots.
 
 ```{r, fig.width=7, fig.height=11}
 plot_grid(
-  plist[[1]] + 
+  plist_fig.4[[1]] + 
     theme(axis.text.x = element_blank(), 
           legend.margin = margin(0, 0, 0, 0),
           legend.box.margin = margin(0, 0, -8, 0)),
-  plist[[2]] + 
+  plist_fig.4[[2]] + 
     theme(axis.text.x = element_blank(), 
           legend.position = "none",
           plot.margin = margin(t = -0.7, unit = "cm")),
-  plist[[3]] + 
+  plist_fig.4[[3]] + 
     theme(axis.text.x = element_blank(), 
           legend.position = "none",
           plot.margin = margin(t = -0.5, unit = "cm")),
-  plist[[4]] + 
+  plist_fig.4[[4]] + 
     theme(legend.position = "none",
           plot.margin = margin(t = -0.5, unit = "cm")) + 
     labs(x = "Diet"),
@@ -548,44 +549,58 @@ ggsave(here("result/figure/Figure 4.tiff"), width = 7, height = 11,
 
 ## Figure S2
 
-Initial box plot.
+Make a dataframe for *p*-value annotation.
 
 ```{r}
-bp_wt_mcs <- alph_tm %>%
-  mutate(SampleType = factor(SampleType, levels = c("Water", "PIM", "DIM"))) %>%
-  ggplot(aes(x = SampleType, y = value)) +
-  geom_boxplot(aes(color = SampleType)) +
-  geom_point(aes(color = SampleType)) +
-  facet_wrap(~alph_indx, scales = "free_y", nrow = 1) +
-  scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
-  scale_color_manual(values = c("grey50", brewer.pal(4, "Paired"))) +
-  labs(x = "Sample type", color = "Sample type") +
-  theme_bw(base_size = 12) +
-  theme(legend.position = "none")
-
-bp_wt_mcs
-```
-
-Add *p* values.
-
-```{r, fig.width=8, fig.height=4}
-# make a dataframe for p value annotation
 p_t.test <- ungroup(t_test) %>%
   separate(comparison, sep = "-", c("start", "end")) %>%
-  mutate(p_adj = paste0("italic(p) == ", p_adj),
-  y = c(150, 160, 0.91, 0.94, 3.8, 3.9, 47, 50))
+  mutate(
+    p_adj = paste0("italic(p) == ", p_adj),
+    y = c(85, 98, 125, 138, 
+          0.92, 0.96, 0.87, 0.91,
+          3.65, 3.8, 3.7, 3.85,
+          40, 43, 38, 41))
+```
 
-# add p value annotation
-bp_wt_mcs + geom_signif(
-  data = p_t.test,
-  aes(xmin = start, xmax = end, annotations = p_adj, y_position = y),
-  tip_length = 0.01,
-  textsize = 3,
-  parse = TRUE,
-  manual = T)
+Make initial plots.
+
+```{r}
+plist_fig.s2 <- lapply(levels(alph_tm$alph_indx), function(x) {
+  filter(alph_tm, alph_indx == x) %>%
+  ggplot(aes(x = SampleType, y = value)) +
+    geom_boxplot(aes(color = SampleType)) +
+    geom_point(aes(color = SampleType)) +
+    geom_signif(
+      data = filter(p_t.test, alph_indx == x),
+      aes(xmin = start, xmax = end, annotations = p_adj, y_position = y),
+      tip_length = 0.01,
+      textsize = 3,
+      parse = TRUE,
+      manual = T) +
+    facet_wrap(~Diet, nrow = 1) + 
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
+    scale_color_manual(values = c("grey50", brewer.pal(4, "Paired"))) +
+    labs(x = "", y = x) +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "none")
+  }
+)
+```
+
+Assemble plots.
+
+```{r, fig.width=8, fig.height=6}
+plot_grid(
+  plist_fig.s2[[1]] + theme(axis.text.x = element_blank()),
+  plist_fig.s2[[2]] + theme(axis.text.x = element_blank()),
+  plist_fig.s2[[3]] + theme(plot.margin = margin(t = -0.5, unit = "cm")) + 
+    labs(x = "Sample type"),
+  plist_fig.s2[[4]] + theme(plot.margin = margin(t = -0.5, unit = "cm")) + 
+    labs(x = "Sample type"),
+  ncol = 2, align = "v") 
 
 # export plot
-ggsave(here("result/figure/Figure S2.tiff"), width = 8, height = 4,
+ggsave(here("result/figure/Figure S2.tiff"), width = 8, height = 6,
        units = "in", dpi = 300, compression = "lzw")
 ```
 
