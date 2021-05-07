@@ -1,0 +1,437 @@
+---
+title: "Beta diversity"
+author: "Yanxian Li<br><small>Department of Paraclinical Sciences<br>Faculty of Veterinary Medicine<br>Norwegian University of Life Sciences</small>"
+date: "<small>`r Sys.Date()`</small>"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+    toc_float: 
+      collapsed: true
+    code_folding: show
+    theme: cerulean
+    self_contained: true
+  pdf_document: 
+    latex_engine: xelatex
+  word_document: default  
+---
+
+```{r style, echo = FALSE, message = FALSE, warning = FALSE}
+require(knitr)
+options(width = 120)
+opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = FALSE)
+```
+
+`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "left",  buttonSide = "left")`
+
+# Getting ready
+
+Load packages
+
+```{r}
+library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
+library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
+library(patchwork) # The Composer of Plots, CRAN v1.1.1 
+library(ggsignif) # Significance Brackets for 'ggplot2', CRAN v0.6.0
+library(RColorBrewer) # ColorBrewer Palettes, CRAN v1.1-2 
+library(usedist) # Distance Matrix Utilities, CRAN v0.4.0
+library(vegan) # Community Ecology Package, CRAN v2.5-7 
+library(gt) # Easily Create Presentation-Ready Display Tables, CRAN v0.2.2 
+
+# Set seed
+set.seed(1910)
+```
+
+Load data
+
+```{r}
+# metadata
+mtd <- read_tsv(here("data/metadata.tsv"), comment = "#q2") %>%
+  rename(SampleID = "#SampleID") %>% 
+  column_to_rownames("SampleID") 
+
+# ordination 
+ord_dgs <- readRDS(here("data/intermediate/qiime2R/beta_diversity_ordination_digesta.rds")) 
+ord_dgs <- ord_dgs$aitchison$data # robust Aitchison PCA (RPCA) 
+ord_mcsFdWt <- readRDS(here("data/intermediate/qiime2R/beta_diversity_ordination_mucosa_feed_water.rds"))
+ord_mcsFdWt <- ord_mcsFdWt$aitchison$data 
+
+# distance matrix
+dist_dgs <- readRDS(here("data/intermediate/qiime2R/beta_diversity_distance_digesta.rds"))
+dist_dgs <- dist_dgs$aitchison$data 
+dist_mcsFdWt <- readRDS(here("data/intermediate/qiime2R/beta_diversity_distance_mucosa_feed_water.rds"))
+dist_mcsFdWt <- dist_mcsFdWt$aitchison$data 
+```
+
+# Ordination
+
+Robust Aitchison PCA (RPCA) is a compositional beta diversity metric rooted in a centered log-ratio (CLR) transformation and matrix completion [(Martino et al., 2019)](https://msystems.asm.org/content/4/1/e00016-19). Aitchison distance was used as the distance metric in the robust Aitchison PCA for its desirable properties: 1)scale invariant, which ensures equivalence between distances computed from absolute and relative abundance measurements, negating the need to perform rarefaction; 2)relative changes driven. Microbes that display large fold change across samples will be weighted more heavily, which makes the ordination robust to random fluctuations of high-abundant taxa; 3)sub-compositionally coherent, which guarantees that distances will never decrease if additional taxa are observed. However, Aitchison distance cannot handle zeros and is thus challenging to apply to the sparse microbiome data. To circumvent this issue, RPCA treats all zeros as missing values and builds a model to handle this missing data using matrix completion.
+
+Note that RPCA is not exactly performing PCA. It is performing PCoA using the Aitchison distance, which is calculated from the Euclidean distance of the CLR-transformed data. Since PCoA with Euclidean distance is equivalent to PCA, the method is called PCA though it's in fact running PCoA.
+
+## Digesta
+
+```{r}
+# combine metadata and rpca results
+rpca_dgs <- ord_dgs$Vectors %>% 
+  inner_join(rownames_to_column(mtd, "SampleID"), by = "SampleID") %>%
+  filter(!(IsTechnicalReplicate == "yes" & PCRBatch == 2)) %>% # remove technical replicates
+  mutate(
+    SampleType = factor(
+      SampleType, 
+      levels = c("REF-PID", "REF-DID", "IM-PID", "IM-DID")))
+
+# plot
+rpcaPlot_dgs <- ggplot(rpca_dgs, aes(x = PC1, y = PC2, color = SampleType)) +
+  geom_hline(yintercept = 0, color = "grey") +
+  geom_vline(xintercept = 0, color = "grey") +
+  # data ellipse
+  stat_ellipse(linetype = "dashed") +
+  geom_point(size = 2) +
+  # keep the aspect ratio between y and x axis (y-axis/x-axis)
+  coord_fixed(ord_dgs$ProportionExplained[2]/ord_dgs$ProportionExplained[1]) + 
+  labs(
+    color = "Sample type",
+    x = paste0("PCo1: ", round(100 * ord_dgs$ProportionExplained[1], 1), "%"),
+    y = paste0("PCo2: ", round(100 * ord_dgs$ProportionExplained[2], 1), "%")) +
+  scale_color_manual(values = brewer.pal(12, "Paired")[c(6, 5, 8, 7)]) +
+  guides(color = guide_legend(nrow = 2)) +
+  theme_bw(base_size = 11) +
+  theme(legend.position = "top")
+
+rpcaPlot_dgs 
+```
+
+## Mucosa, feed and water
+
+```{r}
+# combine metadata and rpca results
+rpca_mcsFdWt <- ord_mcsFdWt$Vectors %>% 
+  inner_join(rownames_to_column(mtd, "SampleID"), by = "SampleID") %>%
+  mutate(
+    Diet = factor(Diet, levels = c("REF", "IM")),
+    SampleType = factor(
+      SampleType, 
+      levels = c("REF-PIM", "REF-DIM", "IM-PIM", "IM-DIM", "Feed", "Water")),
+    Tank = factor(
+      Tank, 
+      levels = c("T02", "T06", "T12", "T18",   # REF diet
+                 "T01", "T19", "T21", "T24"))) # IM diet
+
+# plot
+rpcaPlot_mcsFdWt <- ggplot(rpca_mcsFdWt, aes(x = PC1, y = PC2, color = SampleType)) + 
+  geom_hline(yintercept = 0, color = "grey") +
+  geom_vline(xintercept = 0, color = "grey") +
+  stat_ellipse(linetype = "dashed") +
+  geom_point(size = 2) +
+  geom_text(
+    data = filter(rpca_mcsFdWt, SampleType == "Feed"), 
+    aes(label = Diet), size = 3.5, hjust = 0, vjust = 1.2, show.legend = FALSE) +
+  coord_fixed(ord_mcsFdWt$ProportionExplained[2]/ord_mcsFdWt$ProportionExplained[1]) +
+  labs(
+    color = "Sample type",
+    x = paste0("PCo1: ", round(100 * ord_mcsFdWt$ProportionExplained[1], 1), "%"),
+    y = paste0("PCo2: ", round(100 * ord_mcsFdWt$ProportionExplained[2], 1), "%")) +
+  scale_color_manual(values = brewer.pal(12, "Paired")[c(2, 1, 4, 3, 10, 9)]) +
+  theme_bw(base_size = 11) +  
+  theme(legend.position = "top")
+
+rpcaPlot_mcsFdWt
+```
+
+## Figure 5
+
+Assemble plots.
+
+```{r}
+rpcaPlot_dgs / rpcaPlot_mcsFdWt + plot_annotation(tag_levels = "a")
+
+# export plot
+ggsave(here("result/figure/Figure 5.tiff"), 
+       units = "in", dpi = 300, compression = "lzw")
+```
+
+# PERMANVOA
+
+## Export distance matrix
+
+To compare the `Diet` and `Compartment` effect, we need to run two-way PERMANOVA with 2 nested random effects (`FishID` and `Tank`). Unfortunately, this can't be done in R. We export the distance matrix and run PERMANOVA using the PERMANOVA+ add-on from the [PRIMER v7](https://www.primer-e.com/our-software/permanova-add-on/).
+
+Digesta.
+
+```{r}
+dist_subset(dist_dgs, rpca_dgs$SampleID) %>% # subset distance matrix
+  as.matrix() %>%
+  as.data.frame() %>%
+  write.table(here("data/intermediate/permanova/Aitchison_distance_digesta.tsv"), 
+              sep = "\t", col.names = NA, row.names = TRUE)
+```
+
+Mucosa and water.
+
+```{r}
+filter(rpca_mcsFdWt, SampleOrigin %in% c("Mucosa", "Water")) %>% # get sample ids of mucosa and water samples
+  pull(SampleID) %>%
+  dist_subset(dist_mcsFdWt, .) %>% # subset distance matrix
+  as.matrix() %>%
+  as.data.frame() %>%
+  write.table(here("data/intermediate/permanova/Aitchison_distance_mucosa_water.tsv"), 
+              sep = "\t", col.names = NA, row.names = TRUE)
+```
+
+## Import results from PRIMER7
+
+Import *p*-values of main effects. 
+
+```{r}
+pmanova_main <- read_csv(here("data/intermediate/permanova/permanova_main_effects.csv"))
+
+# remove artisks which are indicative of Monte Carlo p values
+pmanova_main1 <- pmanova_main %>%
+  mutate(across(where(is.character), ~gsub("\\*", "", .x))) %>% 
+  column_to_rownames("SampleOrigin") %>%
+  mutate(across(everything(), as.numeric)) %>%
+  rownames_to_column("SampleOrigin")
+```
+
+Import *p*-values of conditional contrasts.
+
+```{r}
+pmanova_cc <- read_csv(here("data/intermediate/permanova/permanova_conditional_contrasts.csv"))
+
+# apply multiple testing correction to p values of conditional contrast 
+pmanova_cc1 <- pmanova_cc %>% 
+  mutate(across(where(is.character), ~gsub("\\*", "", .x))) %>%
+  column_to_rownames("SampleOrigin") %>%
+  mutate(across(everything(), as.numeric)) %>%
+  t() %>%
+  apply(2, function(x) p.adjust(x, method = "BH")) %>%
+  apply(2, function(x) round(x, digits = 3)) %>%
+  t() %>%
+  as.data.frame() %>%
+  rownames_to_column("SampleOrigin")
+```
+
+## Table 2 
+
+Merge and format tables.
+
+```{r}
+pmanova <- full_join(pmanova_main1, pmanova_cc1, by = "SampleOrigin") %>%
+  rename("Sample origin" = SampleOrigin) %>%
+  gt() %>%
+  tab_header(title = "PERMANOVA") %>%
+  tab_spanner(label = "Main effects", columns = 2:3) %>%
+  tab_spanner(label = "Conditional contrasts", columns = 5:8) %>%
+  tab_footnote(footnote = md("NA: not applicable"),
+               locations = cells_body(columns = c(7, 8), rows = 2)) %>%
+  tab_footnote(footnote = md("Monte Carlo *p* value"),
+               locations = cells_body(columns = c(2, 5, 6), rows = 2)) %>%
+  cols_align(align = "center", everything()) %>%
+  tab_options(table.width = pct(90)) %>%
+  tab_style(style = cell_text(v_align = "middle"),
+            locations = cells_column_labels(columns = everything()))
+
+pmanova
+```
+
+# PERMDISP
+
+PERMANOVA tests differences in both location and dispersion effects. Although PERMANOVA is robust to heterogeneity in the multivariate dispersion, it's a good practice to look at the homogeneity of multivariate dispersion following a significant PERMANVOA result. The homogeneity of multivariate dispersion can be assessed visually (PCoA plot/boxplot) or via a permutation test called PERMDISP, which is implemented in R by the `betadisper()` function from the *vegan* package.
+
+## Digesta
+
+The PERMANOVA results suggested little evidence of `Tank` effect. Thus, we use individual fish for the testing of homogeneity of multivariate dispersion. As there's a significant interaction between the `Diet` and `Compartment` effect, we assess homogeneity of multivariate dispersion for each main effect stratified by the levels of the remaining main effect.
+
+Compute beta-dispersion.
+
+```{r}
+disp_dgs <- betadisper(dist_dgs, rpca_dgs$SampleType, type = "median")
+disp_dgs
+```
+
+Formal permutation test with `permutest`.
+
+```{r}
+permdisp_dgs <- permutest(disp_dgs, pairwise = TRUE, permutations = 999)
+permdisp_dgs
+```
+
+Visual inspection. 
+
+```{r, fig.width=6, fig.height=5}
+# make a dataframe for pairwise comparison *p*-value annotation.
+permdisp_dgs_p <- data.frame(
+  pairs = names(permdisp_dgs$pairwise$permuted), 
+  pval  = permdisp_dgs$pairwise$permuted, row.names = NULL) %>%
+  separate(pairs, sep = "-", c("start1", "start2", "end1", "end2")) %>%
+  mutate(start = paste0(start1, "-", start2),
+         end = paste0(end1, "-", end2)) %>%
+  select(start, end, pval) %>%
+  filter(!(start == "REF-PID" & end == "IM-DID") & 
+         !(start == "REF-DID" & end == "IM-PID")) %>%
+  mutate(pval = paste0("italic(p) == ", pval),
+         y = c(3.3, 3.65, 4.0, 4.35))
+   
+# make plot
+dispVis_dgs <- data.frame(dist = disp_dgs$distances, group = disp_dgs$group) %>%
+  ggplot(aes(x = group,y = dist)) +
+    geom_boxplot(fill = "lightblue") +
+    geom_point() +
+    # p value of anova  
+    geom_text(
+      aes(x = 0, 
+          y = 4.5, 
+          label = paste0("italic(p) == ", permdisp_dgs$tab["Groups", "Pr(>F)"])), 
+      size = 3, hjust = 0, vjust = 0, parse = TRUE) +
+    # p values of pairwise comparisons
+    geom_signif(
+        data = permdisp_dgs_p,
+        aes(xmin = start, xmax = end, annotations = pval, y_position = y),
+        tip_length = 0.01,
+        textsize = 3,
+        parse = TRUE,
+        manual = T) +
+    labs(x = "Sample type", y = "Distance to centroid", 
+         title = "Multivariate dispersion: digesta") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5))
+
+dispVis_dgs
+```
+
+
+## Mucosa
+
+The PERMANOVA results suggested little evidence of `Compartment` effect. We only need to check the homogeneity of multivariate dispersion for the other main effect,`Diet`.
+
+### Filter data
+
+```{r}
+# filter data to keep mucosa samples only
+rpca_mcs <- filter(rpca_mcsFdWt, SampleOrigin == "Mucosa")
+
+# subset distance matrix
+dist_mcs <- dist_subset(dist_mcsFdWt, rpca_mcs$SampleID) 
+```
+
+### Tank as centroids
+
+First, we test the equality of dispersion for `FishID` (replicates) across different `Tank` (centroids).
+
+Compute beta-dispersion.
+
+```{r}
+disp_mcs_tank <- betadisper(dist_mcs, rpca_mcs$Tank, type = "median")
+disp_mcs_tank
+```
+
+Formal permutation test with `permutest`.
+
+```{r}
+permdisp_mcs_tank <- permutest(disp_mcs_tank, pairwise = TRUE, permutations = 999)
+permdisp_mcs_tank
+```
+
+Visual inspection. 
+
+```{r, fig.width=6, fig.height=4}
+dispVis_mcs_tank <- data.frame(
+  dist = disp_mcs_tank$distances, 
+  group = disp_mcs_tank$group) %>%
+  ggplot(aes(x = group,y = dist)) +
+    geom_boxplot(fill = "lightblue") +
+    geom_point() + 
+    geom_text(
+      aes(x = 0, 
+          y = 1.5, 
+          label = paste0("italic(p) == ", permdisp_mcs_tank$tab["Groups", "Pr(>F)"])), 
+      size = 3, hjust = 0, vjust = 0, parse = TRUE) +
+    labs(x = "Tank", y = "Distance to centroid", 
+         title = "Multivariate dispersion: mucosa (tank-level)") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5))
+
+dispVis_mcs_tank
+```
+
+### Diet as centroids
+
+Next, we consider differences in the dispersion of `Tank` centroids around the `Diet` centroids.
+
+Compute distance among the `Tank` centroids.
+
+```{r}
+dist_mcs_tank <- dist_multi_centroids(dist_mcs, rpca_mcs$Tank)
+dist_mcs_tank
+```
+
+Make a new mapping metadata for the distance among `Tank` centroids.
+
+```{r}
+mtd_tank <- rpca_mcs %>%
+  select(Diet, Tank) %>%
+  distinct() %>%
+  arrange(Tank)
+
+mtd_tank
+```
+
+
+Compute beta-dispersion.
+
+```{r}
+disp_mcs_diet <- betadisper(dist_mcs_tank, mtd_tank$Diet, type = "median")
+disp_mcs_diet
+```
+
+Formal permutation test with `permutest`.
+
+```{r}
+permdisp_mcs_diet <- permutest(disp_mcs_diet, pairwise = TRUE, permutations = 999)
+permdisp_mcs_diet
+```
+
+Visual inspection. 
+
+```{r, fig.width=6, fig.height=4}
+dispVis_mcs_diet <- data.frame(
+  dist = disp_mcs_diet$distances, 
+  group = disp_mcs_diet$group) %>%
+  ggplot(aes(x = group,y = dist)) +
+    geom_boxplot(fill = "lightblue") +
+    geom_point() +
+    geom_text(
+      aes(x = 0, 
+          y = 0.45, 
+          label = paste0("italic(p) == ", permdisp_mcs_diet$tab["Groups", "Pr(>F)"])), 
+      size = 3, hjust = 0, vjust = 0, parse = TRUE) +
+    labs(x = "Diet", y = "Distance to centroid", 
+         title = "Multivariate dispersion: mucosa (Diet-level)") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5))
+
+dispVis_mcs_diet
+```
+
+## Figure S3
+
+```{r, fig.width=8, fig.height=4}
+(dispVis_dgs + theme(axis.text.x = element_text(angle = 45, hjust = 1))) +
+(dispVis_mcs_tank + labs(y = "Distance to centroid (tank level)")) +
+(dispVis_mcs_diet + labs(y = "Distance to centroid (diet level)")) +
+plot_layout(widths = c(2, 4, 1)) +
+plot_annotation(tag_levels = list(c("a", "b", ""))) & 
+theme(plot.title = element_blank())
+
+# export plot
+ggsave(here("result/figure/Figure S3.tiff"), width = 8, height = 4,
+       units = "in", dpi = 300, compression = "lzw")
+```
+
+# Session information
+
+```{r session-info}
+sessionInfo()
+```
