@@ -4,64 +4,33 @@
 
 ## Reproducible changes in the intestinal microbiota of Atlantic salmon fed diets containing black soldier fly larvae meal
 
+### This is a work in progress!
+
 Abstract here.
 
 ### Overview
 
 Here's an overview of the file organization in this project.
 ```
-root
-├── code                              # all the scripts used for the analysis
-│   ├── functions                     # functions for automating tasks
-│   ├── utilities                     # utility scripts for miscellaneous tasks
-│   ├── 00_setup.bash                 # download raw and reference data for the analysis
-│   ├── 01_dada2.Rmd                  # sequence denoising by the dada2 pipeline
-│   ├── 02_qiime2_part1.bash          # taxonomic assignment in qiime2
-│   ├── 03_preprocessing.Rmd          # feature table filtering    
-│   ├── 04_qiime2_part2.bash          # phylogeny and core-metrics-results
-│   ├── 05_qiime2R.Rmd                # export qiime2 artifacts into R
-│   ├── 06_taxonomy.Rmd               # taxonomic analysis
-│   ├── 07_alpha-diversity.Rmd        # alpha-diversity visualization and statistical analysis
-│   ├── 08_beta-diversity.Rmd         # beta-diversity visualization and statistical analysis
-│   ├── 09_metadata_association.Rmd   # association testing between microbial clades and sample metadata
-│   └── README.md
-├── data               # all the data, including raw, reference and intermediate data
-│   ├── metadata.tsv   # sample metadata
-│   ├── raw            # raw data
-│   ├── reference      # reference data
-│   ├── qPCR           # qPCR assay reports, plat-calibration and Cq values
-│   ├── dada2          # outputs from dada2 including the representative sequences and feature table
-│   ├── qiime2         # outputs from qiime2
-│   ├── preprocessing  # plots for the identification of contaminants; filtered feature table   
-│   ├── qiime2R        # RData containing outputs from qiime2
-│   ├── permanova      # input data and results of the PERMANOVA
-│   └── maaslin2       # default outputs from the maaslin2 program
-├── image   # pictures/photos relevant to the analysis
-├── result  # final results published with the paper
-│   ├── figures    
-│   ├── tables     
-│   └── README.md 
-├── LICENSE.md  
-└── README.md
-```
-### How to regenerate figures and tables
 
-Computationally lightweight RMarkdown files ([03, 05-09]_\*.Rmd) can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed and ready to go! The instance has limited computational resources (1~2GB RAM) and is not intended for intensive computation (e.g., 01_dada2.Rmd).
+```
+### How to regenerate results
+
+Computationally lightweight RMarkdown files can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed. The instance has limited computational resources (1~2GB RAM) and is not intended for intensive computation (e.g., 01_dada2*.Rmd).
 
 To reproduce the figures and tables published with the paper, run the following RMarkdown files:
-* 03_preprocessing.Rmd
-  * Figure S1  
+
+* 03_filtering.Rmd
   * Table S1
-* 06_taxonomy.Rmd    
-  * Figure 1-2, Figure S2
-  * Table S2
-* 07_alpha-diversity.Rmd 
-  * Figure 3
-* 08_beta-diversity.Rmd
-  * Figure 4
-  * Table 1-2
-* 09_metadata_association.Rmd 
-  * Figure 5, Figure S3-8
+* 08_taxonomy.Rmd    
+  * Figure 1-3, Figure S1
+* 09_alpha_-_diversity.Rmd 
+  * Figure 4, Figure S2
+* 10_beta_-_diversity.Rmd
+  * Figure 5, Figure S3
+  * Table 2
+* 11_multivariable_association.Rmd 
+  * Figure 6-7
   
 ### How to regenerate this repository
 
@@ -69,10 +38,10 @@ To reproduce the figures and tables published with the paper, run the following 
 
 * [Miniconda3](https://docs.conda.io/en/latest/miniconda.html) should be located in your HOME directory.
 * [grabseqs (0.7.0)](https://github.com/louiejtaylor/grabseqs) should be installed via the Miniconda3.
-* [QIIME2 (2020.2)](https://docs.qiime2.org/2020.2/) should be installed within a Miniconda3 environment named as `qiime2-2020.2`.
-  * QIIME2 library: [DEICODE (0.2.3)](https://library.qiime2.org/plugins/deicode/19/) should be installed within the conda environment of qiime2 (`qiime2-2020.2`).
+* [QIIME2 (2020.11)](https://docs.qiime2.org/2020.11/) should be installed within a Miniconda3 environment named as `qiime2-2020.11`.
+  * QIIME2 library: [DEICODE (0.2.3)](https://library.qiime2.org/plugins/deicode/19/) should be installed within the qiime2 conda environment.
 * [Pandoc (1.12.4.2)](https://pandoc.org/index.html) should be located in your PATH.
-* R (3.6.3) should be located in your PATH.
+* R (4.0.5) should be located in your PATH.
 * R packages (packageName_version[source]): 
   * ape_5.3 [CRAN]
   * biomformat_1.14.0 [Bioconductor 3.10]
@@ -114,25 +83,36 @@ To reproduce the figures and tables published with the paper, run the following 
 
 All the code should be run from the project's root directory.
 
-1.Download or clone this github repository to your project's root directory.
+1.Download or clone this github repository to your local computer.
 ```bash
 # clone the github repository
-git clone https://github.com/yanxianl/Li_AqFl2-Microbiota_ASM_2020.git
+git clone https://github.com/yanxianl/Li_AqFl1-Microbiota_2021.git
 
-# delete the following folders which would otherwise cause problems when running `04_qiime2_part2.bash`
-rm -rf data/qiime2/core-metrics-results/ data/qiime2/robust-Aitchison-pca/
+# delete the following folders which would cause problems when computing beta-diversity metrics
+rm -rf \ 
+data/intermediate/qiime2/asv/core-metrics-results/ \ 
+data/intermediate/qiime2/asv/robust-Aitchison-pca/ \
+data/intermediate/qiime2/99otu/core-metrics-results/ \ 
+data/intermediate/qiime2/99otu/robust-Aitchison-pca/ \
+data/intermediate/qiime2/97otu/core-metrics-results/ \ 
+data/intermediate/qiime2/97otu/robust-Aitchison-pca/ 
 ```
-2.Download the raw sequence data and reference database/phylogenetic tree for the analysis.
+2.Download raw sequence data, silva132 reference database and silva128 SEPP reference phylogeny.
 ```bash
-bash code/00_setup.bash
+# activate qiime2 environment
+source $HOME/miniconda3/bin/activate
+conda activate qiime2-2020.11
+
+# excute jupyter notebook
+jupyter nbconvert --execute --to html code/00_setup.ipynb
 ```
 3.Sequence denoising by dada2.
 ```bash
-Rscript -e "rmarkdown::render('code/01_dada2.Rmd')"
+Rscript -e "rmarkdown::render('code/01_dada2_run1.Rmd')" && Rscript -e "rmarkdown::render('code/01_dada2_run2.Rmd')"
 ```
 4.Taxonomic assignment in qiime2.
 ```bash
-bash code/02_qiime2_part1.bash
+jupyter nbconvert --execute --to html code/02_qiime2_part1.ipynb
 ```
 5.Filter the feature table to remove: 1).chloroplast/mitochondria sequences and those without a phylum-level taxonomic annotation;
 2).low-prevalence features that only present in one sample; 3).contaminating features.
@@ -170,6 +150,6 @@ Rscript -e "rmarkdown::render('code/09_metadata_association.Rmd')"
 
 ### Acknowledgements
 
-The project organization was inspired by the Riffomonas project, maintained by Dr. Pat Schloss. visit the [*Riffomonas*](http://www.riffomonas.org/) website for tutorials on reproducible data analysis in microbiome research. 
+The project organization was inspired by the Riffomonas project, maintained by Dr. Pat Schloss. Visit the [*Riffomonas*](http://www.riffomonas.org/) website for tutorials on reproducible data analysis in microbiome research. 
 
 The R package [holepunch](https://karthik.github.io/holepunch/) was used to make this repository [binder](https://mybinder.org/)-ready. 
