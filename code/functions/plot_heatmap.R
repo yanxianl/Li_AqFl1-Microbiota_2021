@@ -33,7 +33,7 @@ for (lib in c("tidyverse", "circlize", "ComplexHeatmap")) {
 
 # Define the function
 plot_heatmap <- function(
-  output_results,
+  maaslin2_output,
   first_n = 50,
   cell_value = "qval",
   data_label = "data",
@@ -48,7 +48,7 @@ plot_heatmap <- function(
   rownames_fontsize = 10,
   italize_rownames = TRUE) {
   
-  df <- output_results
+  df <- maaslin2_output
     
   title_additional <- ""
   
@@ -148,7 +148,7 @@ plot_heatmap <- function(
     mutate(uniq_id = paste0(feature, "_", metadata)) %>%
     select(uniq_id, qval)
   
-  mat1 <- rownames_to_column(mat, "feature") %>%
+  mat_hm <- rownames_to_column(mat, "feature") %>%
     gather(metadata, value, -feature) %>%
     mutate(uniq_id = paste0(feature, "_", metadata)) %>%
     inner_join(qval, by = "uniq_id") %>%
@@ -163,7 +163,20 @@ plot_heatmap <- function(
     gather(metadata, value, -feature) %>%
     mutate(uniq_id = paste0(feature, "_", metadata)) %>%
     inner_join(qval, by = "uniq_id") %>%
-    mutate(mark = ifelse(qval > 0.25, "", ifelse(value > 0, "+", ifelse(value < 0, "-", "")))) %>%
+    mutate(
+      mark = ifelse(
+        qval > 0.25, 
+        "", 
+        ifelse(
+          value > 0, 
+          "+", 
+          ifelse(
+            value < 0, 
+            "-", 
+            "")
+          )
+        )
+      ) %>%
     select(-uniq_id, -value, -qval) %>%
     mutate(metadata = factor(metadata, levels = levels(df$metadata))) %>%
     spread(key = "metadata", value = "mark") %>%
@@ -171,15 +184,15 @@ plot_heatmap <- function(
     as.matrix()
   
   # get the range for the colorbar
-  max_value <- ceiling(max(mat1))
-  min_value <- ceiling(min(mat1))
+  max_value <- ceiling(max(mat_hm))
+  min_value <- ceiling(min(mat_hm))
   range_value <- max(c(abs(max_value),abs(min_value)))
   breaks <- seq(-1*range_value, range_value, by = 1)
   color <- colorRamp2(c(-range_value, 0, range_value), color)
   
   # italize taxonomic labels
   if (italize_rownames == TRUE){
-    expr <- enframe(rownames(mat1), name = NULL) %>%
+    expr <- enframe(rownames(mat_hm), name = NULL) %>%
       # convert rownames to expressions
       mutate(
         row_lab = paste0("italic(", value, ")"), # italize all taxonomic ranks
@@ -192,12 +205,12 @@ plot_heatmap <- function(
     
     row_lab <- parse(text = expr$row_lab) 
   } else {
-    row_lab <- rownames(mat1)
+    row_lab <- rownames(mat_hm)
   }
   
   # plot heatmap
   p <- Heatmap(
-    mat1, 
+    mat_hm, 
     name = legend_title, 
     cluster_columns = FALSE,
     #clustering_distance_columns = "euclidean",
@@ -217,7 +230,7 @@ plot_heatmap <- function(
       legend_height = unit(4, "cm"),
       title_position = legend_title_position),
     cell_fun = function(j, i, x, y, width, height, fill) {
-     grid.text(mark[i, j], x, y, gp = gpar(fontsize = 10))
+      grid.text(mark[i, j], x, y, gp = gpar(fontsize = 10, col = "black"))
     }
   ) 
   return(p)
