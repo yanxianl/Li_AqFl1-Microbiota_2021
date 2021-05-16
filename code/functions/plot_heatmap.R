@@ -41,6 +41,7 @@ plot_heatmap <- function(
   plot_title = TRUE,
   legend_title = TRUE,
   legend_title_position = "topleft",
+  legend_direction = "horizontal",
   color = c("blue", "grey90", "red"),
   board_line_col = "gray96",
   colnames_rotate = 90,
@@ -195,17 +196,17 @@ plot_heatmap <- function(
     expr <- enframe(rownames(mat_hm), name = NULL) %>%
       # convert rownames to expressions
       mutate(
-        row_lab = paste0("italic(", value, ")"), # italize all taxonomic ranks
+        row_label = paste0("italic(", value, ")"), # italize all taxonomic ranks
         # italize genus/species names only
-        #row_lab = ifelse(grepl("__", value), 
+        #row_label = ifelse(grepl("__", value), 
         #paste0("plain(", value, ")"), 
         #paste0("italic(", value, ")")),
         # tilde (~) gets handled as a "space" in R expressions
-        row_lab = gsub("\\s+", "~", row_lab)) 
+        row_label = gsub("\\s+", "~", row_label)) 
     
-    row_lab <- parse(text = expr$row_lab) 
+    row_label <- parse(text = expr$row_label) 
   } else {
-    row_lab <- rownames(mat_hm)
+    row_label <- rownames(mat_hm)
   }
   
   # plot heatmap
@@ -220,18 +221,24 @@ plot_heatmap <- function(
     column_title_side = "top",
     column_names_gp = gpar(fontsize = colnames_fontsize, fontface = "bold"),
     column_names_rot = colnames_rotate,
+    column_names_centered = FALSE,
     cluster_rows = FALSE,
-    row_names_gp = gpar(fontsize = rownames_fontsize),
+    row_labels = row_label,
     row_names_side = "right",
-    row_labels = row_lab,
+    row_names_gp = gpar(fontsize = rownames_fontsize),
+    row_names_max_width = max_text_width(
+      rownames(mat_hm), 
+      gp = gpar(fontsize = rownames_fontsize)
+      ),
     rect_gp = gpar(col = board_line_col, lty = 1, lwd = 0.2), 
     col = color,
     heatmap_legend_param = list(
       legend_height = unit(4, "cm"),
-      title_position = legend_title_position),
+      title_position = legend_title_position,
+      legend_direction = legend_direction),
     cell_fun = function(j, i, x, y, width, height, fill) {
       grid.text(mark[i, j], x, y, gp = gpar(fontsize = 10, col = "black"))
-    }
+      }
   ) 
   return(p)
 }
