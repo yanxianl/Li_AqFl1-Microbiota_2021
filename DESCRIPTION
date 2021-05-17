@@ -1,0 +1,47 @@
+Type: Compendium
+Package: Li_AqFl1-Microbiota_2021
+Title: Reproducible Microbiome Data Analysis
+Version: 0.0.1
+Authors@R: 
+    person(given = "Yanxian",
+           family = "Li",
+           role = c("aut", "cre"),
+           email = "yanxianl@nmbu.no",
+           comment = c(ORCID = "0000-0001-8529-2564"))
+Description: Code for reproducing results presented in the paper:
+    Reproducible changes in the intestinal microbiota of Atlantic salmon
+    fed diets containing black soldier fly larvae meal
+License: MIT
+Depends: 
+    afex,
+    circlize,
+    cowplot,
+    DT,
+    emmeans,
+    flextable,
+    ggh4x,
+    ggpubr,
+    ggResidpanel,
+    ggsignif,
+    ggstatsplot,
+    ggtext,
+    grid,
+    gt,
+    here,
+    Hmisc,
+    knitr,
+    officer,
+    parallel,
+    patchwork,
+    PerformanceAnalytics,
+    plotly,
+    plyr,
+    RColorBrewer,
+    rlang,
+    rmarkdown,
+    scales,
+    tidyverse,
+    usedist,
+    vegan
+Encoding: UTF-8
+LazyData: true

@@ -1,7 +1,7 @@
 <!-- badges: start -->
-  [![Launch Rstudio Binder](http://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/yanxianl/Li_AqFl2-Microbiota_ASM_2020/master?urlpath=rstudio)
-<!-- badges: end -->
-
+  [![Launch Rstudio Binder](http://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/yanxianl/Li_AqFl1-Microbiota_2020/master?urlpath=rstudio)
+  <!-- badges: end -->
+  
 ## Reproducible changes in the intestinal microbiota of Atlantic salmon fed diets containing black soldier fly larvae meal
 
 ### This is a work in progress!
