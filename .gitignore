@@ -6,6 +6,13 @@
 data/raw/casava-18-paired-end-demultiplexed*/*
 data/reference/*silva*
 data/reference/*.biom
+data/intermediate/maaslin2/digesta/figures/
+data/intermediate/maaslin2/digesta/*.rds
+data/intermediate/maaslin2/digesta/*.log
+data/intermediate/maaslin2/mucosa/figures/
+data/intermediate/maaslin2/mucosa/*.rds
+data/intermediate/maaslin2/mucosa/*.log
+data/intermediate/source_tracking/
 
 code/*_cache
 code/*_files
