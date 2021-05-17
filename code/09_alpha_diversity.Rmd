@@ -32,15 +32,13 @@ Load packages
 ```{r}
 library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
 library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
+library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
 library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN v1.1.1  
 library(ggtext) # Improved Text Rendering Support for 'ggplot2', CRAN v0.1.1
 library(ggsignif) # Significance Brackets for 'ggplot2', CRAN v0.6.0
 library(RColorBrewer) # ColorBrewer Palettes, CRAN v1.1-2 
-library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
-library(microbiome) # Microbiome Analytics, Bioconductor v1.12.0
-library(picante) # Integrating Phylogenies and Ecology, CRAN v1.8.2 
 library(afex) # Analysis of Factorial Experiments, CRAN v0.28-1 
-library(ggResidpanel) # Panels and Interactive Versions of Diagnostic Plots using 'ggplot2', CRAN v0.3.0 
+library(ggResidpanel) # Panels and Interactive Versions of Diagnostic Plots, CRAN v0.3.0 
 library(emmeans) # Estimated Marginal Means, aka Least-Squares Means, CRAN v1.5.3 
 
 # Set seed
@@ -50,51 +48,42 @@ set.seed(1910)
 Load data
 
 ```{r}
-# load phyloseq object
+# metadata
 ps <- readRDS(here("data/intermediate/qiime2R/phyloseq.rds"))
+mtd <- data.frame(sample_data(ps), check.names = FALSE) %>%
+  rownames_to_column("SampleID") %>%
+  select(!contains("qPCR"))
 
-# filter samples
-ps <- ps %>%
-  # remove control samples
-  subset_samples(!SampleType %in% c("Extraction-blank", "PCR-blank", "Mock")) %>%
-  # remove technical replicates
-  subset_samples(!(IsTechnicalReplicate == "yes" & PCRBatch == 2))
-
-# extract metadata
-mtd <- data.frame(sample_data(ps), check.names = FALSE)
+# alpha diversity
+alph <- readRDS(here("data/intermediate/qiime2R/alpha_diversity.rds"))
 ```
 
-# Compute alpha diversity
-
-Here, we compute the alpha diversity via the `alpha()` and `pd()` function from the *microbiome* and *picante* package, respectively.
+Tidy data
 
 ```{r}
-# compute Observed features, Peilou's Evenness and Shannon's index
-alph_nphy <- alpha(ps, index = c("observed", "evenness_pielou", "diversity_shannon")) %>%
-  rownames_to_column("SampleID")
-
-# compute Faith's Phylogenetic Diversity
-alph_phy <- pd(samp = t(otu_table(ps)), tree = phy_tree(ps), include.root = F) %>%
-  select(PD) %>%
-  rownames_to_column("SampleID")
-
-# combine data
-alph <- inner_join(alph_nphy, alph_phy, by = "SampleID") %>%
-  inner_join(rownames_to_column(mtd, "SampleID"), by = "SampleID") %>%
-  rename("Observed OTUs" = observed, "Pielou's evenness" = evenness_pielou, 
-         "Shannon's index" = diversity_shannon, "Faith's PD" = PD) %>%
-  pivot_longer("Observed OTUs":"Faith's PD", 
-               names_to = "alph_indx", 
-               values_to = "value") %>%
+alph <- map_dfc(alph, ~.x$data) %>% # merge alpha diversity indices
+  rownames_to_column("SampleID") %>%
+  inner_join(mtd, by = "SampleID") %>%
+  # remove technical replicates
+  filter(!(IsTechnicalReplicate == "yes" & PCRBatch == 2)) %>%
+  rename(
+    "Observed OTUs" = observed_features, 
+    "Pielou's evenness" = pielou_evenness, 
+    "Shannon's index" = shannon_entropy, 
+    "Faith's PD" = faith_pd) %>%
+  pivot_longer(
+    cols = "Pielou's evenness":"Shannon's index", 
+    names_to = "alph_indx", 
+    values_to = "value") %>%
   mutate(
-    FishID = factor(FishID, levels = unique(FishID)), 
-    Tank = factor(Tank, levels = unique(Tank)), 
+    FishID = as.character(FishID), 
     SampleOrigin = factor(
       SampleOrigin, 
       levels = c("Digesta", "Mucosa", "Feed", "Water")),
     alph_indx = factor(
       alph_indx, 
-      levels = c("Observed OTUs", "Pielou's evenness", "Shannon's index", "Faith's PD")))
+      levels = c("Observed OTUs", "Pielou's evenness", 
+                 "Shannon's index", "Faith's PD")))
 ```
 
 # Plot alpha diversity
@@ -138,7 +127,8 @@ Here we use the `mixed` function from the *afex* package to fit linear mixed eff
 
 ```{r, message=TRUE}
 # filter data
-alph_dgs <- filter(alph,  SampleOrigin == "Digesta")
+alph_dgs <- filter(alph,  SampleOrigin == "Digesta") %>%
+  droplevels()
 
 # split data
 alph_dgs_spl <- split(alph_dgs, alph_dgs$alph_indx)
@@ -151,11 +141,38 @@ lme_dgs <- lapply(alph_dgs_spl, function(x) {
 )
 ```
 
-### Model outputs
+One of the fitted models is singular. Let's look at the estimated random effects.
 
 ```{r}
-lme_dgs
+lapply(lme_dgs, function(x) summary(x)$varcor) 
 ```
+
+The standard deviation of the random effect `FishID` is zero for Shannon's index. We update the model by removing the term `1|FishID`.
+
+```{r, message=TRUE}
+lme_dgs1 <- lapply(lme_dgs, function(x){
+  if(isSingular(x$full_model) == TRUE) { # remove random effect "FishID" if the model is singular
+    mixed(log1p(value) ~ Diet * Compartment + (1|Tank), 
+          data = x$data, method = "KR")
+  } else {
+    x
+  }
+ }
+)
+
+lme_dgs1
+```
+
+The updated model is no longer singular. Robust results should hold in both maximal and reduced model. Let's compare the pattern of significant and non-significant effects before and after removing the random effect `FishID`.
+
+```{r}
+left_join(
+  nice(lme_dgs[["Shannon's index"]]), 
+  nice(lme_dgs1[["Shannon's index"]]), 
+  by = "Effect", suffix = c("_max", "_reduced"))
+```
+
+The pattern of significant and non-significant effect is the same for both models. We proceed to model diagnostics.
 
 ### Model diagnostics
 
@@ -163,14 +180,14 @@ Here we use the *ggResidpanel* package to produce a panel of plots for residual 
 
 ```{r, results='hide'}
 lapply(
-  seq_along(lme_dgs), 
+  seq_along(lme_dgs1), 
   function(x) 
   {
     # extract titles 
-    main <- ggdraw() + draw_label(names(lme_dgs)[x], fontface='bold')
+    main <- ggdraw() + draw_label(names(lme_dgs1)[x], fontface='bold')
     
     # make residual diagnostic plots
-    resid_panel <- resid_panel(lme_dgs[[x]]$full_model, plots = "all", qqbands = TRUE)
+    resid_panel <- resid_panel(lme_dgs1[[x]]$full_model, plots = "all", qqbands = TRUE)
     
     # assemble plots
     plot_grid(main, resid_panel, ncol = 1, rel_heights = c(1, 10))
@@ -182,11 +199,11 @@ Everything looks fine. We proceed to post-hoc tests.
 
 ### Post-hoc tests
 
-When interactions between main factors are significant, marginal means averaged over the levels of other covariates in the model can be misleading. A good practice is to do conditional contrasts.
+When the interaction between main factors is significant, marginal means averaged over the levels of other covariates in the model can be misleading. A good practice is to do conditional contrasts.
 
 ```{r}
 # filter alpha-diversity indices showing significant interactions between the main effects
-intr_dgs <- lapply(lme_dgs, function(x) {
+intr_dgs <- lapply(lme_dgs1, function(x) {
   ifelse(x$anova_table["Diet:Compartment", "Pr(>F)"] < 0.05, TRUE, FALSE)
   }
 )
@@ -195,14 +212,13 @@ intr_dgs <- lapply(lme_dgs, function(x) {
 cc_dgs <- mapply(function(x, y){
   # compute estimated marginal means 
   emm <- emmeans(x, ~ Diet * Compartment)
-
   # make conditional contrasts if the interaction is significant
   if (y == TRUE){
-    contrast(emm, method = "consec", simple = "each", combine = TRUE, adjust = "mvt") %>%
+    contrast(emm, method = "consec", simple = "each", combine = TRUE, adjust = "holm") %>%
     summary()
   }
 },
-  x = lme_dgs, 
+  x = lme_dgs1, 
   y = intr_dgs
 )
 
@@ -235,7 +251,7 @@ The fitted models are singular. Let's look at the estimated random effects.
 lapply(lme_mcs, function(x) summary(x)$varcor) 
 ```
 
-The standard deviation of random effect `FishID` is zero for all the alpha indices. The standard deviation of random effect `Tank` is also zero for Faith's PD. We first update the models by removing the random effect `FishID`.
+The standard deviation of random effect `FishID` is zero for all the alpha indices. We update the models by removing the random effect `FishID`.
 
 ```{r, message=TRUE}
 lme_mcs1 <- lapply(alph_mcs_spl, function(x) {
@@ -247,17 +263,17 @@ lme_mcs1 <- lapply(alph_mcs_spl, function(x) {
 lme_mcs1
 ```
 
-Robust results should hold in both maximal and reduced model. Therefore, let us compare the pattern of significant and non-significant effects before and after removing the random effect `FishID`.
+The updated models are no longer singular. Let's compare the pattern of significant and non-significant effects before and after removing the random effect `FishID`.
 
 ```{r}
 map2_dfr(
   lme_mcs, 
   lme_mcs1, 
-  ~left_join(nice(.x), nice(.y), by = "Effect", suffix = c("_full", "_reduced")),
+  ~left_join(nice(.x), nice(.y), by = "Effect", suffix = c("_max", "_reduced")),
   .id = "alpha_diversity")
 ```
 
-The pattern of significant and non-significant effect is largely the same for both models. However, the reduced model for Faith's PD is still singular after removing the random effect `FishID`. To respect the experimental design, We just keep the random effect `Tank` in the model anyway. Now We proceed to model diagnostics.
+The pattern of significant and non-significant effect is the same for both models. We proceed to model diagnostics.
 
 ### Model diagnostics
 
@@ -278,7 +294,7 @@ lapply(
 )
 ```
 
-The residual plot of Shannon's index doesn't look so good. Everything else looks fine. We proceed to post-hoc tests.
+The residual plots of Shannon's index look OKish. Everything else is fine. We proceed to post-hoc tests.
 
 ### Post-hoc tests
 
@@ -423,8 +439,8 @@ p_cc <- bind_rows(p_cc_dgs, p_cc_mcs) %>%
     # position of p value on the x axis 
     p_xpos = (start + end) / 2,
     # position of horizontal bar and p value on the y axis 
-    y = c(0.8, 0.85, 0.95, 1.0, 0.9, 0.95, 1.05, 1.1,
-          4.2, 4.4, 3.75, 4.0, 4.6, 4.9, 4.25, 4.5)) 
+    y = c(0.82, 0.85, 0.96, 1.0, 0.9, 0.95, 1.05, 1.1,
+          5.8, 6.0, 5.4, 5.6, 6.3, 6.6, 5.9, 6.2)) 
 ```
 
 Alpha diversity plots.
@@ -545,7 +561,7 @@ Add *p* values.
 p_t.test <- ungroup(t_test) %>%
   separate(comparison, sep = "-", c("start", "end")) %>%
   mutate(p_adj = paste0("italic(p) == ", p_adj),
-  y = c(150, 160, 0.91, 0.94, 3.8, 3.9, 47, 50))
+  y = c(120, 130, 0.92, 0.95, 5.3, 5.50, 40, 43))
 
 # add p value annotation
 bp_wt_mcs + geom_signif(
