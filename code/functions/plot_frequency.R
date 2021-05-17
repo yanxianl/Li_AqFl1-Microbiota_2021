@@ -1,7 +1,7 @@
 ###############################################################################
 # plot_frequency
 
-# Copyright (c) 2020 Yanxian Li
+# Copyright (c) 2021 Yanxian Li
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
