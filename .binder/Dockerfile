@@ -9,7 +9,7 @@ RUN apt-get update -y\
 && apt-get install -y curl libcurl4-openssl-dev\
 && apt-get install -y git\
 && R -e "install.packages(c('BiocManager','devtools'))"\
-&& R -e "BiocManager::install(c('biomformat','Biostrings','ComplexHeatmap','dada2','DECIPHER','decontam','Maaslin2','microbiome','mixOmics','phangorn','phyloseq','RUVSeq','sva'))"\
+&& R -e "BiocManager::install(c('biomformat','Biostrings','ComplexHeatmap','dada2','DECIPHER','decontam','Maaslin2','microbiome','mixOmics','phangorn','philr','phyloseq','RUVSeq','sva'))"\
 && R -e "devtools::install_github(c('jbisanz/MicrobeR@9f4e593','jbisanz/qiime2R@077b08b','mikemc/speedyseq@8daed32'),upgrade='never')"
 
 USER ${NB_USER}
