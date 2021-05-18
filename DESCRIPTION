@@ -22,7 +22,6 @@ Depends:
     ggpubr,
     ggResidpanel,
     ggsignif,
-    ggstatsplot,
     ggtext,
     grid,
     gt,
