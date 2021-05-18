@@ -3,8 +3,6 @@ title: "Multivariable association analysis"
 author: "Yanxian Li<br><small>Department of Paraclinical Sciences<br>Faculty of Veterinary Medicine<br>Norwegian University of Life Sciences</small>"
 date: "<small>`r Sys.Date()`</small>"
 output:
-  pdf_document: 
-    latex_engine: xelatex
   html_document:
     toc: yes
     toc_depth: 3
@@ -14,29 +12,40 @@ output:
     code_folding: show
     theme: cerulean
     self_contained: true
+  pdf_document: 
+    latex_engine: xelatex
   word_document: default  
 ---
 
 ```{r style, echo = FALSE, message = FALSE, warning = FALSE}
 require(knitr)
 options(width = 120)
-opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = TRUE)
+opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = FALSE)
 ```
 
 `r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "left",  buttonSide = "left")`
 
 # Getting ready
 
+Set system locale.
+
+```{r, results='hide'}
+Sys.setlocale(category = "LC_ALL", locale = "Greek")
+```
+
 Load packages.
 
 ```{r}
 library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
 library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
-library(RColorBrewer) # ColorBrewer Palettes, CRAN v1.1-2 
-library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
-library(MicrobeR) # Handy functions for microbiome analysis in R, [github::jbisanz/MicrobeR] v0.3.2 
-library(Maaslin2) # Maaslin2, Bioconductor v1.4.0
+library(ggtext) # Improved Text Rendering Support for 'ggplot2', CRAN v0.1.1
 library(patchwork) # The Composer of Plots, CRAN v1.1.1  
+library(RColorBrewer) # ColorBrewer Palettes, CRAN v1.1-2 
+library(PerformanceAnalytics) # Econometric Tools for Performance and Risk Analysis, CRAN v2.0.4
+library(MicrobeR) # Handy functions for microbiome analysis in R, [github::jbisanz/MicrobeR] v0.3.2 
+library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
+library(Maaslin2) # Maaslin2, Bioconductor v1.4.0
+library(parallel) # Support for Parallel computation in R, CRAN v4.0.5
 ```
 
 Load function.
@@ -50,7 +59,12 @@ Set ggplot global theme.
 ```{r}
 theme_set(
   theme_bw() +
-  theme(legend.position = "top", strip.text = element_text(face = "italic")))
+  theme(
+    legend.position = "top", 
+    strip.text = element_text(face = "italic"),
+    axis.title.x = element_markdown()
+    )
+  )
 ```
 
 Import data.
@@ -71,14 +85,24 @@ ps <- ps %>%
 
 # extract metadata, OTU table and taxonomy 
 mtd <- data.frame(sample_data(ps), check.names = FALSE) %>%
-  mutate(FishID = as.character(FishID)) 
-
+  rownames_to_column("SampleID") %>%
+  mutate(FishID = as.character(FishID)) %>%
+  # standardize qPCR data for each intestinal compartment
+  group_by(Compartment) %>%
+  mutate(across(contains("qPCR_"), ~scale(.x))) %>%
+  ungroup() %>%
+  # remove prefix in gene names
+  rename_at(vars(contains("qPCR_")), ~gsub("qPCR_", "", .x)) %>%
+  column_to_rownames("SampleID")
+  
 otu <- as.data.frame(otu_table(ps)) 
 
 txnm <- tax_table(ps) %>% as("matrix") %>% as.data.frame()
 ```
 
 ## Collapse OTU table at genus-level
+
+Get the lowest taxonomic rank for each OTU.
 
 ```{r}
 taxa_l6 <- Summarize.Taxa(otu, txnm)$Genus %>%
@@ -113,21 +137,83 @@ taxa_l6 <- Summarize.Taxa(otu, txnm)$Genus %>%
   column_to_rownames("Genus")
 ```
 
-# Differential abundance testing
+# Exploratory data analysis
+
+For the multivariable association analysis, `Diet` and `Compartment` are the main fixed effects we're interested in. We're also interested in potential associations between intestinal microbial clades and gene expression data, which have been published elsewhere ([doi: 10.1016/j.fsi.2018.12.057](https://doi.org/10.1016/j.fsi.2018.12.057)). Based on existing literature, we know that microbiota is related to intestinal immunity and lipid metabolism (digestion, absorption and transport). Before running Maaslin2, let's perform some exploratory data analyses.
+
+### qPCR: immune reponses
+
+Gene expression profile.
+
+```{r, fig.width=6, fig.height=4}
+# filter gene expression data related to immune responses 
+qpcr_immn <- filter(mtd, SampleOrigin == "Mucosa") %>%
+  select(Diet, Compartment, cd3γδ:tgfβ1)
+  
+# gene expression profile
+qpcr_immn %>%
+  pivot_longer(cd3γδ:tgfβ1, names_to = "gene", values_to = "rel_expr") %>%
+  ggplot(aes(x = Diet, y = rel_expr)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(aes(color = Compartment), position = position_jitterdodge(0.2)) +
+    facet_wrap(~gene, ncol = 4) +
+    labs(y = "Standardize expression") +
+    theme_bw(base_size = 12) +
+    scale_color_brewer(palette = "Dark2") 
+```
+
+The expression levels of these immune genes are often correlated. Let's look at their correlations.
+
+```{r, fig.height=8, fig.width=8}
+select(qpcr_immn, cd3γδ:tgfβ1) %>% 
+  chart.Correlation(mhistogram = TRUE, pch = 19)
+```
+
+### qPCR: lipid metabolism
+
+Gene expression profile.
+
+```{r, fig.width=6, fig.height=6}
+# filter gene expression data related to lipid metabolism in the intestine
+qpcr_lipid  <- filter(mtd, SampleOrigin == "Mucosa") %>%
+  select(Diet, Compartment, fabp2b, cd36:cyp51)
+  
+# gene expression profile
+qpcr_lipid %>%
+  pivot_longer(fabp2b:cyp51, names_to = "gene", values_to = "rel_expr") %>%
+  ggplot(aes(x = Diet, y = rel_expr)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(aes(color = Compartment), position = position_jitterdodge(0.2)) +
+    facet_wrap(~gene, ncol = 3) +
+    labs(y = "Standardize expression") +
+    theme_bw(base_size = 12) +
+    scale_color_brewer(palette = "Dark2") 
+```
+
+Correlation plot.
+
+```{r, fig.height=9, fig.width=9}
+select(qpcr_lipid, fabp2b:cyp51) %>% 
+  chart.Correlation(mhistogram = TRUE, pch = 19)
+```
+
+Based on the existing literature and the above exploratory data analysis, we include *foxp3* and *plin2* in the multivariable association analysis in addition to the main effects `Diet` and `Compartment`.
+
+# Multivariable association analysis
 
 Define fixed and random effects.
 
 ```{r}
-# fixed effects
-fixef <- c("Diet", "Compartment") 
+# Fixed effects
+fixef <- c("Diet", "Compartment", "foxp3", "plin2") 
 
-# random effects
+# Random effects
 ranef <- c("FishID", "Tank")
 ```
 
 ## Digesta
 
-### Subset data
+### Filter data
 
 ```{r}
 # metadata
@@ -146,21 +232,21 @@ fit_dgs <- Maaslin2(
   output = here("data/intermediate/maaslin2/digesta"),
   min_abundance = 0,
   min_prevalence = 0.25,
-  max_significance = 0.05,
+  max_significance = 0.1,
   normalization = "TSS",
   transform = "LOG",
   analysis_method = "LM",
   fixed_effects = fixef,
   random_effects = ranef,
   correction = "BH",
-  standardize = FALSE,  
+  standardize = FALSE, # already did during the data preprocessing 
   plot_heatmap = TRUE,
-  plot_scatter = FALSE,
-  cores = parallel::detectCores()
+  plot_scatter = TRUE,
+  cores = detectCores()
   )
 ```
 
-### Modify MaAsLin2 outputs
+### Tidy MaAsLin2 outputs
 
 Merge maaslin2 outputs, feature table and metadata.
 
@@ -174,12 +260,12 @@ fit_dgs_results <- filter(fit_dgs$results) %>%
     feature = gsub("\\.", " ", feature))
 
 # add feed samples to the feature table
-mtd_dgs_fd <- filter(mtd, SampleOrigin %in% c("Feed", "Digesta")) 
+mtd_dgs_fd <- filter(mtd, SampleOrigin %in% c("Feed", "Digesta"))
 taxa_l6_dgs_fd <- select(taxa_l6, rownames(mtd_dgs_fd)) %>%
   mutate(across(everything(), ~.x/sum(.x)))
 
 # filter features showing significant associations with metadata
-sigAss_dgs <- filter(fit_dgs_results, qval <= 0.05) %>%
+sigAss_dgs <- filter(fit_dgs_results, qval <= 0.1) %>%
   mutate(N.not.zero = paste0(N.not.zero, "/", N)) %>%
   # NB: taxa names in the maaslin2 outputs may not match those in the feature table!!
   inner_join(rownames_to_column(taxa_l6_dgs_fd, "feature"), by = "feature") %>%
@@ -190,28 +276,48 @@ sigAss_dgs <- filter(fit_dgs_results, qval <= 0.05) %>%
   inner_join(rownames_to_column(mtd_dgs_fd, "SampleID"), by = "SampleID") %>%
   mutate(
     qval = ifelse(qval < 0.001, "< 0.001", round(qval, 3)), 
-    # text annotation 
-    ann_text = paste("q-value:", qval)
+    coef = formatC(coef, format = "e", digits = 1), 
+    # text annotation for categorical metadata
+    ann_ctg = paste("FDR:", qval),
+    # text annotation for continuous metadata
+    ann_ctn = paste(
+      paste("FDR:", qval), 
+      "\n", 
+      paste("coefficient:", coef), 
+      "\n", 
+      paste("N.not.zero:", N.not.zero)
+    )
   ) 
 ```
 
 ### Heatmap
 
-```{r, fig.width=4, fig.height=8}
+In total, 93 features showed significant associations with `Diet`, which are too many to be displayed on the heatmap. Here we filter these features to keep those with a q-value < 1e-4, which results in 68 features in total to be displayed.
+
+```{r, fig.width=4.5, fig.height=10}
+# filter features
+feature_to_display <- fit_dgs_results %>%
+  filter(qval <= 0.1) %>%
+  filter(!(metadata == "Diet" & qval >= 1e-4)) %>%
+  pull(feature) %>%
+  unique()
+
+# make heatmap  
 hmp_dgs <- plot_heatmap(
-  maaslin2_output = fit_dgs_results,
-  first_n = 50, # plot all data: n_distinct(sigAss_dgs$feature)
+  maaslin2_output = filter(fit_dgs_results, feature %in% feature_to_display),
+  qval_cutoff = 0.1,
+  first_n = length(feature_to_display), # plot all data: n_distinct(sigAss_dgs$feature)
   cell_value = "qval",
   data_label = "data",
   metadata_label = "metadata",
   plot_title = FALSE,
   legend_title = FALSE,
-  legend_title_position = "topcenter", # topleft, topcenter, leftcenter-rot, lefttop-rot
+  legend_title_position = "topcenter", # topcenter, topleft, leftcenter-rot, lefttop-rot
   legend_direction = "horizontal", # "vertical", "horizontal"
   color = c("blue", "grey90", "red"),
   board_line_col = "white",
-  colnames_rotate = 45,
-  colnames_fontsize = 12,
+  colnames_rotate = 50,
+  colnames_fontsize = 10,
   rownames_fontsize = 10,
   italize_rownames = TRUE)
 
@@ -222,7 +328,7 @@ draw(
  )
 ```
 
-### Scatter plot
+### Boxplot: categorical predictors
 
 #### Diet
 
@@ -233,11 +339,11 @@ sigAss_dgs_diet <- sigAss_dgs %>%
   # add the number of non-zero observations in each diet to the text annotation
   group_by(feature, Diet) %>%
   summarize(N = n(), N_notzero = paste0(sum(Abundance != 0), "/", N)) %>%
-  mutate(text_extra = paste0("N.not.zero(", Diet, "): ", N_notzero)) %>%
+  mutate(ann_extra = paste0("N.not.zero(", Diet, "): ", N_notzero)) %>%
   group_by(feature) %>%
-  summarize(text_extra = paste0(text_extra, collapse = "\n")) %>%
+  summarize(ann_extra = paste0(ann_extra, collapse = "\n")) %>%
   inner_join(filter(sigAss_dgs, metadata == "Diet"), by = "feature") %>%
-  mutate(ann_text = paste0(ann_text, "\n", text_extra))
+  mutate(ann_ctg = paste0(ann_ctg, "\n", ann_extra))
 
 # plotting
 filter(sigAss_dgs_diet, SampleOrigin == "Digesta") %>%
@@ -249,14 +355,14 @@ ggplot(aes(x = Diet, y = Abundance)) +
     data = filter(sigAss_dgs_diet, SampleOrigin == "Feed"),
     color = "#666666", size = 3) +
   geom_text(
-    aes(x = Inf, y = Inf, label = ann_text), 
+    aes(x = Inf, y = Inf, label = ann_ctg), 
     size = 3, hjust = 1, vjust = 1) +
   facet_wrap(~feature, ncol = 5, scales = "free_y") +
   scale_y_continuous(
     limits = c(0, NA), expand = expansion(mult = c(0, 0.6)), 
     labels = scales::percent_format(accuracy = 0.1)) +   
   labs(y = "Relative abundance") +
-  scale_color_brewer(palette = "Dark2") 
+  scale_color_manual(values = brewer.pal(4, "Dark2")[c(1:2)]) 
 ```
 
 #### Compartment
@@ -270,28 +376,68 @@ sigAss_dgs_cmprt <- sigAss_dgs %>%
 sigAss_dgs_cmprt <- sigAss_dgs_cmprt %>%
   group_by(feature, Compartment) %>%
   summarize(N = n(), N_notzero = paste0(sum(Abundance != 0), "/", N)) %>%
-  mutate(text_extra = paste0("N.not.zero(", Compartment, "): ", N_notzero)) %>%
+  mutate(ann_extra = paste0("N.not.zero(", Compartment, "): ", N_notzero)) %>%
   group_by(feature) %>%
-  summarize(text_extra = paste(text_extra, collapse = "\n")) %>%
+  summarize(ann_extra = paste(ann_extra, collapse = "\n")) %>%
   inner_join(sigAss_dgs_cmprt, by = "feature") %>%
-  mutate(ann_text = paste0(ann_text, "\n", text_extra))
+  mutate(ann_ctg = paste0(ann_ctg, "\n", ann_extra))
 
 # plotting
 ggplot(sigAss_dgs_cmprt, aes(x = Compartment, y = Abundance)) +
   geom_boxplot(width = 0.5, outlier.shape = NA) +
   geom_jitter(aes(color = Diet), position = position_jitter(0.2)) +
   geom_text(
-    aes(x = Inf, y = Inf, label = ann_text), 
+    aes(x = Inf, y = Inf, label = ann_ctg), 
     size = 3, hjust = 1, vjust = 1) +
   facet_wrap(~feature, ncol = 5, scales = "free_y") +
   scale_y_continuous(
     limits = c(0, NA), expand = expansion(mult = c(0, 0.6)), 
     labels = scales::percent_format(accuracy = 0.1)) +   
   labs(y = "Relative abundance") +
-  scale_color_brewer(palette = "Dark2") 
+  scale_color_manual(values = brewer.pal(4, "Dark2")[c(3:4)])  
 ```
 
-### Figure 6
+### Scatter plot: continuous predictors
+
+```{r}
+scatter_dgs <- lapply(
+  fixef[-c(1:2)], 
+  function(x){
+    
+  var <- ensym(x)
+    
+  filter(sigAss_dgs, metadata == rlang::as_name(var) & SampleOrigin != "Feed") %>%
+  ggplot(aes(x = !!var, y = log(Abundance))) +
+    geom_point(aes(color = Diet), size = 2) +
+    geom_smooth(color = "#666666", method = "lm", fill = NA) +
+    geom_text(
+      aes(x = Inf, y = Inf, label = ann_ctn), 
+      size = 3, hjust = 1, vjust = 1) +
+    facet_wrap(~feature, ncol = 5, scales = "free_y") +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.5))) +   
+    labs(
+      x = paste0("Standardized expression of *", rlang::as_name(var), "*"), 
+      y = "Relative abundance (log scale)") +   
+    scale_color_manual(values = brewer.pal(4, "Dark2")[c(3:4)])  
+  }
+)
+
+names(scatter_dgs) <- fixef[-c(1:2)]
+```
+
+#### qPCR: *foxp3*
+
+```{r, fig.width=10, fig.height=4}
+scatter_dgs[["foxp3"]]
+```
+
+#### qPCR: *plin2*
+
+```{r, fig.width=7.5, fig.height=4}
+scatter_dgs[["plin2"]]
+```
+
+## Figure 6
 
 ### Figure 6b
 
@@ -317,13 +463,13 @@ fig6b <- sigAss_dgs_diet %>%
         mutate(feature = factor(feature, levels = fig6b_taxa_name)), 
       color = "#666666", size = 3) +
     geom_text(
-      aes(x = Inf, y = Inf, label = ann_text), size = 3, hjust = 1, vjust = 1) +
+      aes(x = Inf, y = Inf, label = ann_ctg), size = 3, hjust = 1, vjust = 1) +
     facet_wrap(~feature, ncol = 3, scales = "free_y") +
     scale_y_continuous(
       limits = c(0, NA), expand = expansion(mult = c(0, 0.6)), 
       labels = scales::percent_format(accuracy = 1)) +   
     labs(y = "Relative abundance") +
-    scale_color_brewer(palette = "Dark2") 
+    scale_color_manual(values = brewer.pal(4, "Dark2")[c(1:2)]) 
 
 fig6b 
 ```
@@ -353,13 +499,13 @@ fig6c <- filter(
         mutate(feature = factor(feature, levels = fig6c_taxa_name)), 
       color = "#666666", size = 3) +
     geom_text(
-      aes(x = Inf, y = Inf, label = ann_text), size = 3, hjust = 1, vjust = 1) +
+      aes(x = Inf, y = Inf, label = ann_ctg), size = 3, hjust = 1, vjust = 1) +
     facet_wrap(~feature, ncol = 3, scales = "free_y") +
     scale_y_continuous(
       limits = c(0, NA), expand = expansion(mult = c(0, 0.6)), 
       labels = scales::percent_format(accuracy = 1.0)) +   
     labs(y = "Relative abundance") +
-    scale_color_brewer(palette = "Dark2") 
+    scale_color_manual(values = brewer.pal(4, "Dark2")[c(1:2)])
 
 fig6c 
 ```
@@ -379,7 +525,7 @@ fig6_main <- grid.grabExpr(
   ) 
 
 # assemble subplots
-fig6_sub <- fig6b / fig6c + theme(plot.margin = margin(b = 1.5, unit = "cm")) +
+fig6_sub <- fig6b / fig6c + theme(plot.margin = margin(b = 1.3, unit = "cm")) +
   plot_layout(guides = 'collect') 
 
 # heatmap + subplots
@@ -394,7 +540,7 @@ ggsave(here("result", "figure", "Figure 6.tiff"), width = 10, height = 12,
 
 ## Mucosa
 
-### Subset data
+### Filter data
 
 ```{r}
 # metadata
@@ -413,23 +559,21 @@ fit_mcs <- Maaslin2(
   output = here("data/intermediate/maaslin2/mucosa"),
   min_abundance = 0,
   min_prevalence = 0.25,
-  max_significance = 0.05,
+  max_significance = 0.1,
   normalization = "TSS",
   transform = "LOG",
   analysis_method = "LM",
   fixed_effects = fixef,
   random_effects = ranef,
   correction = "BH",
-  standardize = FALSE,  
+  standardize = FALSE, 
   plot_heatmap = TRUE,
-  plot_scatter = FALSE,
-  cores = parallel::detectCores()
+  plot_scatter = TRUE,
+  cores = detectCores()
   )
 ```
 
-### Modify MaAsLin2 outputs
-
-Merge maaslin2 outputs, feature table and metadata.
+### Tidy MaAsLin2 outputs
 
 ```{r}
 # extract maaslin2 output
@@ -444,38 +588,48 @@ taxa_l6_mcs_fd <- select(taxa_l6, rownames(mtd_mcs_fd)) %>%
   mutate(across(everything(), ~.x/sum(.x)))
 
 # filter features showing significant associations with metadata
-sigAss_mcs <- filter(fit_mcs_results, qval <= 0.05) %>%
-  mutate(N.not.zero = paste0(N.not.zero, "/", N)) %>%
-  # NB: taxa names in the maaslin2 outputs may not match those in the feature table!!
+sigAss_mcs <- filter(fit_mcs_results, qval <= 0.1) %>%
+  mutate(
+    feature = gsub("\\.", " ", feature), 
+    N.not.zero = paste0(N.not.zero, "/", N)) %>%
   inner_join(rownames_to_column(taxa_l6_mcs_fd, "feature"), by = "feature") %>%
   pivot_longer(
-    cols = contains("AqFl1-"), # SampleID starts with "AqFl1-" 
+    cols = contains("AqFl1-"), 
     names_to = "SampleID", 
     values_to = "Abundance") %>%
   inner_join(rownames_to_column(mtd_mcs_fd, "SampleID"), by = "SampleID") %>%
   mutate(
     qval = ifelse(qval < 0.001, "< 0.001", round(qval, 3)), 
-    ann_text = paste("q-value:", qval)
+    coef = formatC(coef, format = "e", digits = 1), 
+    ann_ctg = paste("FDR:", qval),
+    ann_ctn = paste(
+      paste("FDR:", qval), 
+      "\n", 
+      paste("coefficient:", coef), 
+      "\n", 
+      paste("N.not.zero:", N.not.zero)
+    )
   ) 
 ```
 
 ### Heatmap
 
-```{r, fig.width=4, fig.height=8}
+```{r, fig.height=8, fig.width=4}
 hmp_mcs <- plot_heatmap(
   maaslin2_output = fit_mcs_results,
-  first_n = n_distinct(sigAss_mcs$feature), 
+  qval_cutoff = 0.1,
+  first_n = n_distinct(sigAss_mcs$feature), # plot all data
   cell_value = "qval",
   data_label = "data",
   metadata_label = "metadata",
   plot_title = FALSE,
   legend_title = FALSE,
-  legend_title_position = "topcenter", 
+  legend_title_position = "topcenter",
   legend_direction = "horizontal", 
   color = c("blue", "grey90", "red"),
   board_line_col = "white",
-  colnames_rotate = 45,
-  colnames_fontsize = 12,
+  colnames_rotate = 50,
+  colnames_fontsize = 10,
   rownames_fontsize = 10,
   italize_rownames = TRUE)
 
@@ -486,21 +640,21 @@ draw(
  )
 ```
 
-### Scatter plot
+### Boxplot: categorical predictors
 
 #### Diet
 
-```{r, fig.width=11, fig.height=14}
+```{r, fig.width=11, fig.height=16}
 # filter features showing significant associations with Diet
 sigAss_mcs_diet <- sigAss_mcs %>% 
   filter(metadata == "Diet" & SampleOrigin != "Feed") %>%
   group_by(feature, Diet) %>%
   summarize(N = n(), N_notzero = paste0(sum(Abundance != 0), "/", N)) %>%
-  mutate(text_extra = paste0("N.not.zero(", Diet, "): ", N_notzero)) %>%
+  mutate(ann_extra = paste0("N.not.zero(", Diet, "): ", N_notzero)) %>%
   group_by(feature) %>%
-  summarize(text_extra = paste0(text_extra, collapse = "\n")) %>%
+  summarize(ann_extra = paste0(ann_extra, collapse = "\n")) %>%
   inner_join(filter(sigAss_mcs, metadata == "Diet"), by = "feature") %>%
-  mutate(ann_text = paste0(ann_text, "\n", text_extra))
+  mutate(ann_ctg = paste0(ann_ctg, "\n", ann_extra))
 
 # plotting
 filter(sigAss_mcs_diet, SampleOrigin == "Mucosa") %>%
@@ -511,14 +665,14 @@ ggplot(aes(x = Diet, y = Abundance)) +
     data = filter(sigAss_mcs_diet, SampleOrigin == "Feed"),
     color = "#666666", size = 3) +
   geom_text(
-    aes(x = Inf, y = Inf, label = ann_text), 
+    aes(x = Inf, y = Inf, label = ann_ctg), 
     size = 3, hjust = 1, vjust = 1) +
   facet_wrap(~feature, ncol = 5, scales = "free_y") +
   scale_y_continuous(
     limits = c(0, NA), expand = expansion(mult = c(0, 0.6)), 
     labels = scales::percent_format(accuracy = 0.1)) +   
   labs(y = "Relative abundance") +
-  scale_color_brewer(palette = "Dark2") 
+  scale_color_manual(values = brewer.pal(4, "Dark2")[c(1:2)])   
 ```
 
 #### Compartment
@@ -532,38 +686,77 @@ sigAss_mcs_cmprt <- sigAss_mcs %>%
 sigAss_mcs_cmprt <- sigAss_mcs_cmprt %>%
   group_by(feature, Compartment) %>%
   summarize(N = n(), N_notzero = paste0(sum(Abundance != 0), "/", N)) %>%
-  mutate(text_extra = paste0("N.not.zero(", Compartment, "): ", N_notzero)) %>%
+  mutate(ann_extra = paste0("N.not.zero(", Compartment, "): ", N_notzero)) %>%
   group_by(feature) %>%
-  summarize(text_extra = paste(text_extra, collapse = "\n")) %>%
+  summarize(ann_extra = paste(ann_extra, collapse = "\n")) %>%
   inner_join(sigAss_mcs_cmprt, by = "feature") %>%
-  mutate(ann_text = paste0(ann_text, "\n", text_extra))
+  mutate(ann_ctg = paste0(ann_ctg, "\n", ann_extra))
 
 # plotting
 ggplot(sigAss_mcs_cmprt, aes(x = Compartment, y = Abundance)) +
   geom_boxplot(width = 0.5, outlier.shape = NA) +
   geom_jitter(aes(color = Diet), position = position_jitter(0.2)) +
   geom_text(
-    aes(x = Inf, y = Inf, label = ann_text), 
+    aes(x = Inf, y = Inf, label = ann_ctg), 
     size = 3, hjust = 1, vjust = 1) +
   facet_wrap(~feature, ncol = 5, scales = "free_y") +
   scale_y_continuous(
-    limits = c(0, NA), expand = expansion(mult = c(0, 0.6)), 
+    limits = c(0, NA),expand = expansion(mult = c(0, 0.6)), 
     labels = scales::percent_format(accuracy = 0.1)) +   
   labs(y = "Relative abundance") +
-  scale_color_brewer(palette = "Dark2") 
+  scale_color_manual(values = brewer.pal(4, "Dark2")[c(3:4)])  
 ```
 
-### Figure 7
+### Scatter plot: continuous predictors
+
+```{r}
+scatter_mcs <- lapply(
+  fixef[-c(1:2)], 
+  function(x){
+    
+  var <- ensym(x)
+    
+  filter(sigAss_mcs, metadata == rlang::as_name(var) & SampleOrigin != "Feed") %>%
+  ggplot(aes(x = !!var, y = log(Abundance))) +
+    geom_point(aes(color = Diet), size = 2) +
+    geom_smooth(color = "#666666", method = "lm", fill = NA) +
+    geom_text(
+      aes(x = Inf, y = Inf, label = ann_ctn), 
+      size = 3, hjust = 1, vjust = 1) +
+    facet_wrap(~feature, ncol = 5, scales = "free_y") +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.5))) +   
+    labs(
+      x = paste0("Standardized expression of *", rlang::as_name(var), "*"), 
+      y = "Relative abundance (log scale)") +   
+    scale_color_manual(values = brewer.pal(4, "Dark2")[c(3:4)])  
+  }
+)
+
+names(scatter_mcs) <- fixef[-c(1:2)]
+```
+
+#### qPCR: *foxp3*
+
+```{r, fig.width=7.5, fig.height=4}
+scatter_mcs[["foxp3"]]
+```
+
+#### qPCR: *plin2*
+
+```{r, fig.width=7.5, fig.height=7}
+scatter_mcs[["plin2"]] + facet_wrap(~feature, ncol = 3, scales = "free_y")
+```
+
+## Figure 7
 
 ### Figure 7b
 
 Highlight representative taxa enriched in fish fed the REF diet.
 
-```{r, fig.width=6.5, fig.height=5}
+```{r, fig.width=6.5, fig.height=3}
 # taxa to be shown in the subplot
 fig7b_taxa_name <- c(
-  "Lactobacillus", "f__Peptostreptococcaceae", "Peptostreptococcus", 
-  "Lactococcus", "Leuconostoc", "Pediococcus"
+  "Lactobacillus", "f__Peptostreptococcaceae", "Peptostreptococcus"
   )
 
 # plot
@@ -579,13 +772,13 @@ fig7b <- sigAss_mcs_diet %>%
         mutate(feature = factor(feature, levels = fig7b_taxa_name)), 
       color = "#666666", size = 3) +
     geom_text(
-      aes(x = Inf, y = Inf, label = ann_text), size = 3, hjust = 1, vjust = 1) +
+      aes(x = Inf, y = Inf, label = ann_ctg), size = 3, hjust = 1, vjust = 1) +
     facet_wrap(~feature, ncol = 3, scales = "free_y") +
     scale_y_continuous(
       limits = c(0, NA), expand = expansion(mult = c(0, 0.6)), 
       labels = scales::percent_format(accuracy = 1)) +   
     labs(y = "Relative abundance") +
-    scale_color_brewer(palette = "Dark2") 
+    scale_color_manual(values = brewer.pal(4, "Dark2")[c(1:2)])
 
 fig7b 
 ```
@@ -615,15 +808,63 @@ fig7c <- filter(
         mutate(feature = factor(feature, levels = fig7c_taxa_name)), 
       color = "#666666", size = 3) +
     geom_text(
-      aes(x = Inf, y = Inf, label = ann_text), size = 3, hjust = 1, vjust = 1) +
+      aes(x = Inf, y = Inf, label = ann_ctg), size = 3, hjust = 1, vjust = 1) +
     facet_wrap(~feature, ncol = 3, scales = "free_y") +
     scale_y_continuous(
       limits = c(0, NA), expand = expansion(mult = c(0, 0.6)), 
       labels = scales::percent_format(accuracy = 1.0)) +   
     labs(y = "Relative abundance") +
-    scale_color_brewer(palette = "Dark2") 
+    scale_color_manual(values = brewer.pal(4, "Dark2")[c(1:2)])
 
 fig7c 
+```
+
+### Figure 7d
+
+Highlight the positive association between *Paenibacillus* and *foxp3*.
+
+```{r, fig.width=3, fig.height=4}
+fig7d <- sigAss_mcs %>%
+  filter(metadata == "foxp3" & SampleOrigin != "Feed") %>%
+  filter(feature == "Paenibacillus") %>%
+  ggplot(aes(x = foxp3, y = log(Abundance))) +
+    geom_point(aes(color = Diet), size = 2) +
+    geom_smooth(color = "#666666", method = "lm", fill = NA) +
+    geom_text(
+      aes(x = Inf, y = Inf, label = ann_ctn), 
+      size = 3, hjust = 1, vjust = 1) +
+    facet_wrap(~feature, ncol = 5, scales = "free_y") +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.4))) +     
+    labs(
+      x = "*foxp3* (standardized expression)", 
+      y = "Relative abundance (log scale)") +   
+    scale_color_manual(values = brewer.pal(4, "Dark2")[c(3:4)])
+
+fig7d
+```
+
+### Figure 7e
+
+Highlight the negative association between *Enterococcus* and *plin2*.
+
+```{r, fig.width=3, fig.height=4}
+fig7e <- sigAss_mcs %>%
+  filter(metadata == "plin2" & SampleOrigin != "Feed") %>%
+  filter(feature == "Enterococcus") %>%
+  ggplot(aes(x = plin2, y = log(Abundance))) +
+    geom_point(aes(color = Diet), size = 2) +
+    geom_smooth(color = "#666666", method = "lm", fill = NA) +
+    geom_text(
+      aes(x = Inf, y = Inf, label = ann_ctn), 
+      size = 3, hjust = 1, vjust = 1) +
+    facet_wrap(~feature, ncol = 5, scales = "free_y") +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.4))) +   
+    labs(
+      x = "*plin2* (standardized expression)", 
+      y = "Relative abundance (log scale)") +   
+    scale_color_manual(values = brewer.pal(4, "Dark2")[c(3:4)])
+
+fig7e
 ```
 
 ### Figure 7
@@ -635,14 +876,21 @@ Assemble plots.
 fig7_main <- grid.grabExpr(
   draw(
     hmp_mcs, 
-    padding = unit(c(2, 2, 2, 8), "mm"), # bottom, left, top and right
+    padding = unit(c(6, 2, 2, 8), "mm"), # bottom, left, top and right
     heatmap_legend_side = "top"
    )
   ) 
 
 # assemble subplots
-fig7_sub <- fig7b / fig7c + theme(plot.margin = margin(b = 1.5, unit = "cm")) +
-  plot_layout(guides = 'collect') 
+fig7bc <- fig7b / fig7c +
+  plot_layout(heights = c(1, 2), guides = 'collect') 
+
+fig7de <- fig7d + fig7e * theme(plot.margin = margin(b = 0, unit = "cm")) +
+  plot_layout(guides = 'collect') &
+  theme(legend.position = "bottom")
+
+fig7_sub <- fig7bc / fig7de +
+  plot_layout(nrow = 3, heights = c(1, 2, 1.2)) 
 
 # heatmap + subplots
 wrap_elements(full = fig7_main) + fig7_sub +
