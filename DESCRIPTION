@@ -19,7 +19,6 @@ Depends:
     DT,
     emmeans,
     flextable,
-    ggh4x,
     ggpubr,
     ggResidpanel,
     ggsignif,
