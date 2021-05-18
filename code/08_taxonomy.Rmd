@@ -334,147 +334,6 @@ ggsave(here("result/figure/Figure 1.tiff"), width = 10, height = 6,
        units = "in", dpi = 300, compression = "lzw")
 ```
 
-# Core microbiota
-
-## Compute core microbiota
-
-Data preprocessing.
-
-```{r}
-# subset phyloseq
-ps_core <- list(
-  REF = subset_samples(ps, Diet == "REF" & !SampleOrigin %in% c("Feed", "Water")),
-  IM = subset_samples(ps, Diet == "IM" & !SampleOrigin %in% c("Feed", "Water")))
-
-# data filtering and transformation
-ps_core <- ps_core %>%
-  # remove features with zero count in all samples
-  map(~filter_taxa(.x, function(x) sum(x > 0) > 0, TRUE)) %>%
-  # aggregate OTUs at genus level
-  #map(~tax_glom(.x, "Genus")) %>%
-  # total sum scaling
-  map(~transform_sample_counts(.x, function(x){x / sum(x)}))
-```
-
-## Core microbiota heatmap
-
-### Initial heatmap
-
-```{r, results='hide'}
-# basic plot
-coreHmp <- map(seq_along(ps_core), function(x){
-  if (names(ps_core)[x] == "REF"){
-    plot_core(ps_core[[x]], 
-      plot.type = "heatmap", 
-      colours = rev(brewer.pal(5, "RdBu")),
-      prevalences = seq(0.1, 1, 0.1), 
-      detections = 9,
-      min.prevalence = 0.5) 
-  } else {
-    plot_core(ps_core[[x]], 
-      plot.type = "heatmap", 
-      colours = rev(brewer.pal(5, "RdBu")),
-      prevalences = seq(0.1, 1, 0.1), 
-      detections = 8,
-      min.prevalence = 0.5) 
-    }
-  }
-)
-
-names(coreHmp) <- c("REF", "IM")  
-
-# change aesthetics
-coreHmp <- map(seq_along(coreHmp), function(x){
-  coreHmp[[x]] + 
-  scale_fill_gradientn(
-    colours = rev(brewer.pal(5, "RdBu")),
-    breaks = seq(0, 1, 0.1), 
-    labels = formatC(seq(0, 1, 0.1), format = "f", digits = 1), 
-    limits = c(0, 1)) +
-  labs(title = names(coreHmp)[x], x = "Detection threshold (%)", y = "") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
-  }
-)  
-```
-
-### Format x-axis text
-
-```{r}
-# get plot data
-coreHmp_dt <- map(coreHmp, ~.x$data)
-
-# format x axis labels
-xlab <- map(coreHmp_dt, function(x){
-  unique(x$DetectionThreshold) %>% 
-    as.character() %>% 
-    as.numeric()
-  }
-) 
-
-xlab <- map(xlab, ~formatC(.x * 100, format = "f", digits = 1))   
-
-# add custom labels
-coreHmp <- map2(coreHmp, xlab, function(x, y) x + scale_x_discrete(labels = y)) 
-```
-
-### Format y-axis text
-
-```{r}
-# add the taxonomy of core taxa
-coreHmp_dt <- map(coreHmp_dt, function(x){
-  txnm[levels(x$Taxa), ] %>%
-  rownames_to_column("Taxa") %>%
-  inner_join(x, by = "Taxa") %>%
-  # get the best taxonomic annotations for core taxa
-  mutate(
-    Class = ifelse(is.na(Class)|Class == "NA"|grepl("uncultured|Ambiguous|metagenome", Class), 
-                   Phylum, 
-                   Class),
-    Order = ifelse(is.na(Order)|Order == "NA"|grepl("uncultured|Ambiguous|metagenome", Order), 
-                   Class, 
-                   Order),
-    Family = ifelse(is.na(Family)|Family == "NA"|grepl("uncultured|Ambiguous|metagenome", Family), 
-                    Order, 
-                    Family),
-    Genus = ifelse(is.na(Genus)|Genus == "NA"|grepl("uncultured|Ambiguous|metagenome", Genus), 
-                   Family, 
-                   Genus)) %>%
-  select(Taxa, Genus, DetectionThreshold, Prevalence) %>%
-  # italicize taxa names using R expressions
-  mutate(Taxa = paste0(Taxa, ":italic(", Genus, ")"),
-         # some taxa names contain space; tilde (~) is recognized as "space" in R expressions
-         Taxa = gsub("\\s+", "~", Taxa), 
-         Taxa = gsub("g__", "", Taxa),
-         Taxa = factor(Taxa, levels = unique(Taxa))) %>%
-  select(-Genus)
-  }
-)
-
-# replace the data
-coreHm <- map2(coreHmp, coreHmp_dt, function(x, y) x$data <- y)
-
-# parse y axis text as R expression
-ylab <- map(coreHmp_dt, ~parse(text = gsub("OTU.*:", "", levels(.x$Taxa))))  
-
-# make new plots
-coreHmp <- map2(coreHmp, ylab, function(x, y) x + scale_y_discrete(labels = y)) 
-```
-
-### Figure 2
-
-```{r, fig.width=8.5, fig.height=10}
-coreHmp <- ggarrange(
-  plotlist = coreHmp, nrow = 1, labels = c("OTUs", ""), label.y = 0.55, 
-  font.label = list(size = 10, face = "plain"), legend = "right", common.legend = TRUE)
-
-coreHmp
-
-# export plot
-ggsave(here("result/figure/Figure 2.tiff"), width = 8.5, height = 10,
-       units = "in", dpi = 300, compression = "lzw")
-```
-
 # Microbial overlap
 
 ## Number of OTUs shared
@@ -669,7 +528,7 @@ Assemble plots.
 plot_grid(bp_shared_feed, bp_shared_water, nrow =  1) 
 ```
 
-## Figure 3
+## Figure 2
 
 ```{r, fig.width=7, fig.height=8}
 plot_grid(ovrl_bar_feed, bp_shared_feed, ovrl_bar_water, bp_shared_water, 
@@ -677,9 +536,151 @@ plot_grid(ovrl_bar_feed, bp_shared_feed, ovrl_bar_water, bp_shared_water,
           labels = c("a", "", "b", "")) 
 
 # export plot
-ggsave(here("result/figure/Figure 3.tiff"), width = 7, height = 8,
+ggsave(here("result/figure/Figure 2.tiff"), width = 7, height = 8,
        units = "in", dpi = 300, compression = "lzw")
 ```
+
+# Core microbiota
+
+## Compute core microbiota
+
+Data preprocessing.
+
+```{r}
+# subset phyloseq
+ps_core <- list(
+  REF = subset_samples(ps, Diet == "REF" & !SampleOrigin %in% c("Feed", "Water")),
+  IM = subset_samples(ps, Diet == "IM" & !SampleOrigin %in% c("Feed", "Water")))
+
+# data filtering and transformation
+ps_core <- ps_core %>%
+  # remove features with zero count in all samples
+  map(~filter_taxa(.x, function(x) sum(x > 0) > 0, TRUE)) %>%
+  # aggregate OTUs at genus level
+  #map(~tax_glom(.x, "Genus")) %>%
+  # total sum scaling
+  map(~transform_sample_counts(.x, function(x){x / sum(x)}))
+```
+
+## Core microbiota heatmap
+
+### Initial heatmap
+
+```{r, results='hide'}
+# basic plot
+coreHmp <- map(seq_along(ps_core), function(x){
+  if (names(ps_core)[x] == "REF"){
+    plot_core(ps_core[[x]], 
+      plot.type = "heatmap", 
+      colours = rev(brewer.pal(5, "RdBu")),
+      prevalences = seq(0.1, 1, 0.1), 
+      detections = 9,
+      min.prevalence = 0.5) 
+  } else {
+    plot_core(ps_core[[x]], 
+      plot.type = "heatmap", 
+      colours = rev(brewer.pal(5, "RdBu")),
+      prevalences = seq(0.1, 1, 0.1), 
+      detections = 8,
+      min.prevalence = 0.5) 
+    }
+  }
+)
+
+names(coreHmp) <- c("REF", "IM")  
+
+# change aesthetics
+coreHmp <- map(seq_along(coreHmp), function(x){
+  coreHmp[[x]] + 
+  scale_fill_gradientn(
+    colours = rev(brewer.pal(5, "RdBu")),
+    breaks = seq(0, 1, 0.1), 
+    labels = formatC(seq(0, 1, 0.1), format = "f", digits = 1), 
+    limits = c(0, 1)) +
+  labs(title = names(coreHmp)[x], x = "Detection threshold (%)", y = "") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+  }
+)  
+```
+
+### Format x-axis text
+
+```{r}
+# get plot data
+coreHmp_dt <- map(coreHmp, ~.x$data)
+
+# format x axis labels
+xlab <- map(coreHmp_dt, function(x){
+  unique(x$DetectionThreshold) %>% 
+    as.character() %>% 
+    as.numeric()
+  }
+) 
+
+xlab <- map(xlab, ~formatC(.x * 100, format = "f", digits = 1))   
+
+# add custom labels
+coreHmp <- map2(coreHmp, xlab, function(x, y) x + scale_x_discrete(labels = y)) 
+```
+
+### Format y-axis text
+
+```{r}
+# add the taxonomy of core taxa
+coreHmp_dt <- map(coreHmp_dt, function(x){
+  txnm[levels(x$Taxa), ] %>%
+  rownames_to_column("Taxa") %>%
+  inner_join(x, by = "Taxa") %>%
+  # get the best taxonomic annotations for core taxa
+  mutate(
+    Class = ifelse(is.na(Class)|Class == "NA"|grepl("uncultured|Ambiguous|metagenome", Class), 
+                   Phylum, 
+                   Class),
+    Order = ifelse(is.na(Order)|Order == "NA"|grepl("uncultured|Ambiguous|metagenome", Order), 
+                   Class, 
+                   Order),
+    Family = ifelse(is.na(Family)|Family == "NA"|grepl("uncultured|Ambiguous|metagenome", Family), 
+                    Order, 
+                    Family),
+    Genus = ifelse(is.na(Genus)|Genus == "NA"|grepl("uncultured|Ambiguous|metagenome", Genus), 
+                   Family, 
+                   Genus)) %>%
+  select(Taxa, Genus, DetectionThreshold, Prevalence) %>%
+  # italicize taxa names using R expressions
+  mutate(Taxa = paste0(Taxa, ":italic(", Genus, ")"),
+         # some taxa names contain space; tilde (~) is recognized as "space" in R expressions
+         Taxa = gsub("\\s+", "~", Taxa), 
+         Taxa = gsub("g__", "", Taxa),
+         Taxa = factor(Taxa, levels = unique(Taxa))) %>%
+  select(-Genus)
+  }
+)
+
+# replace the data
+coreHm <- map2(coreHmp, coreHmp_dt, function(x, y) x$data <- y)
+
+# parse y axis text as R expression
+ylab <- map(coreHmp_dt, ~parse(text = gsub("OTU.*:", "", levels(.x$Taxa))))  
+
+# make new plots
+coreHmp <- map2(coreHmp, ylab, function(x, y) x + scale_y_discrete(labels = y)) 
+```
+
+### Figure 3
+
+```{r, fig.width=8.5, fig.height=10}
+coreHmp <- ggarrange(
+  plotlist = coreHmp, nrow = 1, labels = c("OTUs", ""), label.y = 0.55, 
+  font.label = list(size = 10, face = "plain"), legend = "right", common.legend = TRUE)
+
+coreHmp
+
+# export plot
+ggsave(here("result/figure/Figure 3.tiff"), width = 8.5, height = 10,
+       units = "in", dpi = 300, compression = "lzw")
+```
+
 
 # Session information
 
