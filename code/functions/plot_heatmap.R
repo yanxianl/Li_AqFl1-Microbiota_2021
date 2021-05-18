@@ -34,6 +34,7 @@ for (lib in c("tidyverse", "circlize", "ComplexHeatmap")) {
 # Define the function
 plot_heatmap <- function(
   maaslin2_output,
+  qval_cutoff = 0.25,
   first_n = 50,
   cell_value = "qval",
   data_label = "data",
@@ -41,7 +42,7 @@ plot_heatmap <- function(
   plot_title = TRUE,
   legend_title = TRUE,
   legend_title_position = "topleft",
-  legend_direction = "horizontal",
+  legend_direction = "vertical",
   color = c("blue", "grey90", "red"),
   board_line_col = "gray96",
   colnames_rotate = 90,
@@ -153,7 +154,7 @@ plot_heatmap <- function(
     gather(metadata, value, -feature) %>%
     mutate(uniq_id = paste0(feature, "_", metadata)) %>%
     inner_join(qval, by = "uniq_id") %>%
-    mutate(value = ifelse(qval > 0.25, 0, value)) %>%
+    mutate(value = ifelse(qval > qval_cutoff, 0, value)) %>%
     select(-uniq_id, -qval) %>%
     mutate(metadata = factor(metadata, levels = levels(df$metadata))) %>%
     spread(key = "metadata", value = "value") %>%
@@ -166,7 +167,7 @@ plot_heatmap <- function(
     inner_join(qval, by = "uniq_id") %>%
     mutate(
       mark = ifelse(
-        qval > 0.25, 
+        qval > qval_cutoff, 
         "", 
         ifelse(
           value > 0, 
