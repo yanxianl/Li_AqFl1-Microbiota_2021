@@ -41,7 +41,7 @@ library(qiime2R) # Import qiime2 artifacts to R, [github::jbisanz/qiime2R] v0.99
 library(MicrobeR) # Handy functions for microbiome analysis in R, [github::jbisanz/MicrobeR] v0.3.2 
 library(microbiome) # Microbiome Analytics, Bioconductor v1.12.0
 library(speedyseq) # Faster implementations of phyloseq functions, [github::mikemc/speedyseq] v0.5.3.9001  #
-library(flextable) # Functions for Tabular Reporting, CRAN v0.6.1    
+library(flextable) # Functions for Tabular Reporting, CRAN v0.6.1  
 library(officer) # Manipulation of Microsoft Word and PowerPoint Documents, CRAN v0.3.16     
 library(DT) # A Wrapper of the JavaScript Library 'DataTables', CRAN v0.17 
 ```
@@ -80,10 +80,14 @@ txnm_assg <- txnm %>%
   group_by(Rank) %>%
   # Empty taxonomic ranks may be na or strings containing "uncultured" or "Ambiguous_taxa"
   summarize(OTUs_classified = sum(!is.na(Name) & !grepl("uncultured|Ambiguous|metagenome", Name))) %>%
-  mutate(Frac_classified = OTUs_classified / ntaxa(ps),
-         Frac_classified = ifelse(Frac_classified == 1, "100", round(Frac_classified * 100, 1)),
-         Frac_classified = paste(Frac_classified, "%"),
-         Rank = factor(Rank, rank_names(ps))) %>%
+  mutate(
+    Frac_classified = OTUs_classified / ntaxa(ps),
+    Frac_classified = ifelse(
+      Frac_classified == 1, 
+      "100", 
+      round(Frac_classified * 100, 1)),
+    Frac_classified = paste(Frac_classified, "%"),
+    Rank = factor(Rank, rank_names(ps))) %>%
   arrange(Rank) 
 
 txnm_assg %>%
@@ -122,8 +126,9 @@ mock_obs <- mock_obs$data %>%
 
 ```{r}
 mock <- bind_cols(mock_exp, mock_obs) %>%
-  mutate(gram_staining = c("(G+)", "(G+)", "(G+)", "(G+)", "(G+)", "(G-)", "(G-)", "(G-)"),
-         taxa = paste0("*", taxa_exp, "*", " ", gram_staining, " / ", "*", tax_obs, "*")) %>% 
+  mutate(
+    gram_staining = c("(G+)", "(G+)", "(G+)", "(G+)", "(G+)", "(G-)", "(G-)", "(G-)"),
+    taxa = paste0("*", taxa_exp, "*", " ", gram_staining, " / ", "*", tax_obs, "*")) %>% 
   select(-taxa_exp, -gram_staining, -tax_obs) %>%
   mutate(taxa = factor(taxa, levels = unique(taxa))) %>% 
   # use percentage as unit for relative abundance
@@ -148,13 +153,29 @@ bar_mock <- mock %>%
   geom_bar(stat = "identity") +
   geom_text(position = position_stack(vjust = 0.5), size = 4) +
   annotate("segment", x = 1.75, xend = 6.25, y = 102, yend = 102) +
-  annotate("text", x = c(1, 4.5), y = c(105, 105), label = c("Expected", "Observed"), size = 4) +
-  scale_y_continuous(limits = c(0, 105), breaks = 0:10*10, expand = expansion(mult = c(0, 0.05))) +
-  labs(x = "Mock samples", y = "Relative abundance (%)", fill = "Taxa (expected (Gram stain) / observed)") +
-  scale_fill_manual(values = brewer.pal(8, "Paired"), labels = levels(mock$taxa)) +
+  annotate(
+    "text", x = c(1, 4.5), y = c(105, 105), 
+    label = c("Expected", "Observed"), size = 4
+    ) +
+  scale_y_continuous(
+    limits = c(0, 105), 
+    breaks = 0:10*10, 
+    expand = expansion(mult = c(0, 0.05))
+    ) +
+  labs(
+    x = "Mock samples", 
+    y = "Relative abundance (%)", 
+    fill = "Taxa (expected (Gram stain) / observed)"
+    ) +
+  scale_fill_manual(
+    values = brewer.pal(8, "Paired"), 
+    labels = levels(mock$taxa)
+    ) +
   theme_minimal() +
-  theme(axis.text.x = element_blank(),
-        legend.text = element_markdown()) # align legend text to left
+  theme(
+    axis.text.x = element_blank(),
+    legend.text = element_markdown()) # align legend text to left
+
 bar_mock
 ```
 
@@ -183,27 +204,37 @@ Tidy taxa table for making stacked bar plots.
 ```{r}
 taxa_tab <- as.data.frame(taxa_tab) %>%
   rownames_to_column("Taxa") %>%
-  separate(Taxa, sep = ";", c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")) %>% 
-  mutate(Phylum = ifelse(is.na(Phylum)|Phylum == "NA"|grepl("uncultured|Ambiguous|metagenome", Phylum), 
-                         Kingdom, 
-                         Phylum),
-         Class = ifelse(is.na(Class)|Class == "NA"|grepl("uncultured|Ambiguous|metagenome", Class), 
-                        Phylum, 
-                        Class),
-         Order = ifelse(is.na(Order)|Order == "NA"|grepl("uncultured|Ambiguous|metagenome", Order), 
-                        Class, 
-                        Order),
-         Family = ifelse(is.na(Family)|Family == "NA"|grepl("uncultured|Ambiguous|metagenome", Family), 
-                         Order, 
-                         Family),
-         Genus = ifelse(is.na(Genus)|Genus == "NA"|grepl("uncultured|Ambiguous|metagenome", Genus), 
-                        Family, 
-                        Genus)) %>%
+  separate(
+    Taxa, 
+    sep = ";", 
+    c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")) %>% 
+  mutate(
+    Phylum = ifelse(
+      is.na(Phylum)|Phylum == "NA"|grepl("uncultured|Ambiguous|metagenome", Phylum), 
+      Kingdom, 
+      Phylum),
+    Class = ifelse(
+      is.na(Class)|Class == "NA"|grepl("uncultured|Ambiguous|metagenome", Class), 
+      Phylum, 
+      Class),
+    Order = ifelse(
+      is.na(Order)|Order == "NA"|grepl("uncultured|Ambiguous|metagenome", Order), 
+      Class, 
+      Order),
+    Family = ifelse(
+      is.na(Family)|Family == "NA"|grepl("uncultured|Ambiguous|metagenome", Family), 
+      Order, 
+      Family),
+    Genus = ifelse(
+      is.na(Genus)|Genus == "NA"|grepl("uncultured|Ambiguous|metagenome", Genus), 
+      Family, 
+      Genus)) %>%
   select(-Kingdom, -(Class:Family)) %>%
-  mutate(Phylum = gsub("p__", "", Phylum),
-         Phylum = factor(Phylum, levels = rev(unique(Phylum))),
-         Genus = gsub("g__", "", Genus),
-         Genus = factor(Genus, levels = rev(unique(Genus)))) %>%
+  mutate(
+    Phylum = gsub("p__", "", Phylum),
+    Phylum = factor(Phylum, levels = rev(unique(Phylum))),
+    Genus = gsub("g__", "", Genus),
+    Genus = factor(Genus, levels = rev(unique(Genus)))) %>%
   arrange(Phylum, Genus) %>%
   mutate(Genus = factor(Genus, levels = unique(Genus))) %>%
   pivot_longer(-c(Phylum, Genus), names_to = "SampleID", values_to = "Abundance") %>%
@@ -223,7 +254,11 @@ taxa_bar_digesta <- filter(taxa_tab, SampleOrigin == "Digesta") %>%
   labs(x = "", y = "Relative abundance (%)") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
-  facet_nested(~ SampleOrigin + Diet + Compartment, scales = "free_x", nest_line = TRUE) +
+  facet_nested(
+    ~ SampleOrigin + Diet + Compartment, 
+    scales = "free_x", 
+    nest_line = TRUE
+    ) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         strip.background = element_blank(),
@@ -236,7 +271,11 @@ taxa_bar_mucosa <- filter(taxa_tab, SampleOrigin == "Mucosa") %>%
   labs(x = "", y = "") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
-  facet_nested(~ SampleOrigin + Diet + Compartment, scales = "free_x", nest_line = TRUE) +
+  facet_nested(
+    ~ SampleOrigin + Diet + Compartment, 
+    scales = "free_x", 
+    nest_line = TRUE
+    ) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         axis.text.y = element_blank(),
@@ -245,8 +284,10 @@ taxa_bar_mucosa <- filter(taxa_tab, SampleOrigin == "Mucosa") %>%
 
 # feed samples
 taxa_bar_feed <- filter(taxa_tab, SampleType == "Feed") %>%
-  mutate(Diet = ifelse(SampleName == "FeedREF", "REF", "IM"),
-         Diet = factor(Diet, levels = c("REF", "IM"))) %>%
+  mutate(
+    Diet = ifelse(SampleName == "FeedREF", "REF", "IM"),
+    Diet = factor(Diet, levels = c("REF", "IM"))
+    ) %>%
   ggplot(aes(x = SampleName, y = Abundance, fill = Genus)) +
   geom_bar(stat = "identity", width = 0.5) +
   labs(x = "", y = "") +
@@ -316,7 +357,7 @@ lgnd <- unique(taxa_tab[ , c("Genus", "Phylum")]) %>%
   hline_top(part = "header", border = fp_border(color = "white")) # remove horizontal line in the table header
 
 # convert flextable into a ggplot object
-lgnd <- as_raster(lgnd)
+lgnd <- as_raster(lgnd, webshot = "webshot")
 
 lgnd <- ggplot() + 
   theme_void() + 
@@ -477,7 +518,8 @@ shared_feed <- map(seq_along(shared_feed), function(x){
 Compute the abundance of shared OTUs between water and intestinal mucosa.
 
 ```{r}
-shared_water <- prune_taxa(names(which(prvl[["Water"]] > 0)), ps_tss) %>% sample_sums()
+shared_water <- prune_taxa(names(which(prvl[["Water"]] > 0)), ps_tss) %>% 
+  sample_sums()
 
 # combine with metadata
 shared_water <- data.frame(Abundance = shared_water) %>%
@@ -499,7 +541,9 @@ bp_shared_feed <- ggplot(shared_feed, aes(x = Compartment, y = Abundance)) +
   geom_point() +
   facet_nested(~ Diet + Compartment, scales = "free_x", nest_line = TRUE) +
   labs(x = "Comparment", y = "Relative abundance of shared OTUs (%)") +
-  scale_y_continuous(limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))) + 
+  scale_y_continuous(
+    limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))
+    ) + 
   theme_bw() +
   theme(axis.text.x = element_blank(),
         strip.background = element_blank(),
@@ -515,7 +559,9 @@ bp_shared_water <- shared_water %>%
     geom_point() +
     facet_nested(~ Diet + Compartment, scales = "free_x", nest_line = TRUE) +
     labs(x = "Comparment", y = "Relative abundance of shared OTUs (%)") +
-    scale_y_continuous(limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))) + 
+    scale_y_continuous(
+      limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))
+      ) + 
     theme_bw() +
     theme(axis.text.x = element_blank(),
           strip.background = element_blank(),
@@ -550,7 +596,8 @@ Data preprocessing.
 # subset phyloseq
 ps_core <- list(
   REF = subset_samples(ps, Diet == "REF" & !SampleOrigin %in% c("Feed", "Water")),
-  IM = subset_samples(ps, Diet == "IM" & !SampleOrigin %in% c("Feed", "Water")))
+  IM = subset_samples(ps, Diet == "IM" & !SampleOrigin %in% c("Feed", "Water"))
+  )
 
 # data filtering and transformation
 ps_core <- ps_core %>%
@@ -634,18 +681,22 @@ coreHmp_dt <- map(coreHmp_dt, function(x){
   inner_join(x, by = "Taxa") %>%
   # get the best taxonomic annotations for core taxa
   mutate(
-    Class = ifelse(is.na(Class)|Class == "NA"|grepl("uncultured|Ambiguous|metagenome", Class), 
-                   Phylum, 
-                   Class),
-    Order = ifelse(is.na(Order)|Order == "NA"|grepl("uncultured|Ambiguous|metagenome", Order), 
-                   Class, 
-                   Order),
-    Family = ifelse(is.na(Family)|Family == "NA"|grepl("uncultured|Ambiguous|metagenome", Family), 
-                    Order, 
-                    Family),
-    Genus = ifelse(is.na(Genus)|Genus == "NA"|grepl("uncultured|Ambiguous|metagenome", Genus), 
-                   Family, 
-                   Genus)) %>%
+    Class = ifelse(
+      is.na(Class)|Class == "NA"|grepl("uncultured|Ambiguous|metagenome", Class), 
+      Phylum, 
+      Class),
+    Order = ifelse(
+      is.na(Order)|Order == "NA"|grepl("uncultured|Ambiguous|metagenome", Order), 
+      Class, 
+      Order),
+    Family = ifelse(
+      is.na(Family)|Family == "NA"|grepl("uncultured|Ambiguous|metagenome", Family), 
+      Order, 
+      Family),
+    Genus = ifelse(
+      is.na(Genus)|Genus == "NA"|grepl("uncultured|Ambiguous|metagenome", Genus), 
+      Family, 
+      Genus)) %>%
   select(Taxa, Genus, DetectionThreshold, Prevalence) %>%
   # italicize taxa names using R expressions
   mutate(Taxa = paste0(Taxa, ":italic(", Genus, ")"),
@@ -671,8 +722,13 @@ coreHmp <- map2(coreHmp, ylab, function(x, y) x + scale_y_discrete(labels = y))
 
 ```{r, fig.width=8.5, fig.height=10}
 coreHmp <- ggarrange(
-  plotlist = coreHmp, nrow = 1, labels = c("OTUs", ""), label.y = 0.55, 
-  font.label = list(size = 10, face = "plain"), legend = "right", common.legend = TRUE)
+  plotlist = coreHmp, 
+  nrow = 1, 
+  labels = c("OTUs", ""), 
+  label.y = 0.55, 
+  font.label = list(size = 10, face = "plain"), 
+  legend = "right", 
+  common.legend = TRUE)
 
 coreHmp
 
