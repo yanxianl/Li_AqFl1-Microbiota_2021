@@ -45,7 +45,6 @@ library(PerformanceAnalytics) # Econometric Tools for Performance and Risk Analy
 library(MicrobeR) # Handy functions for microbiome analysis in R, [github::jbisanz/MicrobeR] v0.3.2 
 library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
 library(Maaslin2) # Maaslin2, Bioconductor v1.4.0
-library(parallel) # Support for Parallel computation in R, CRAN v4.0.5
 ```
 
 Load function.
@@ -242,7 +241,7 @@ fit_dgs <- Maaslin2(
   standardize = FALSE, # already did during the data preprocessing 
   plot_heatmap = TRUE,
   plot_scatter = TRUE,
-  cores = detectCores()
+  cores = parallel::detectCores()
   )
 ```
 
@@ -569,7 +568,7 @@ fit_mcs <- Maaslin2(
   standardize = FALSE, 
   plot_heatmap = TRUE,
   plot_scatter = TRUE,
-  cores = detectCores()
+  cores = parallel::detectCores()
   )
 ```
 
