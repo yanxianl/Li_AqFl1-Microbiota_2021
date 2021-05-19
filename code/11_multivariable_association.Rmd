@@ -20,7 +20,7 @@ output:
 ```{r style, echo = FALSE, message = FALSE, warning = FALSE}
 require(knitr)
 options(width = 120)
-opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = FALSE)
+opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = TRUE)
 ```
 
 `r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "left",  buttonSide = "left")`
@@ -45,6 +45,9 @@ library(PerformanceAnalytics) # Econometric Tools for Performance and Risk Analy
 library(MicrobeR) # Handy functions for microbiome analysis in R, [github::jbisanz/MicrobeR] v0.3.2 
 library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
 library(Maaslin2) # Maaslin2, Bioconductor v1.4.0
+
+# Set seed
+set.seed(1910)
 ```
 
 Load function.
