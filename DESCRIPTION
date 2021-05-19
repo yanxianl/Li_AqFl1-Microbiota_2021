@@ -28,6 +28,7 @@ Depends:
     here,
     Hmisc,
     knitr,
+    magick,
     officer,
     parallel,
     patchwork,
