@@ -14325,7 +14325,7 @@ qiime dev refresh-cache</code></pre>
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>/media/md0/nutrition_group Dropbox/projects/yanxian/Li_AqFl1-Microbiota_2020_renv
+<pre>/media/md0/nutrition_group Dropbox/projects/yanxian/Li_AqFl1-Microbiota_2021
 </pre>
 </div>
 </div>
@@ -14338,11 +14338,6 @@ qiime dev refresh-cache</code></pre>
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <h2 id="Filter-feature-table">Filter feature table<a class="anchor-link" href="#Filter-feature-table">&#182;</a></h2>
-</div>
-</div>
-<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="Digesta-samples">Digesta samples<a class="anchor-link" href="#Digesta-samples">&#182;</a></h3>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <div class="jp-Cell-inputWrapper">
@@ -14393,55 +14388,6 @@ qiime dev refresh-cache</code></pre>
 </div>
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="Mucosa,-feed-and-water-samples">Mucosa, feed and water samples<a class="anchor-link" href="#Mucosa,-feed-and-water-samples">&#182;</a></h3>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<div class="jp-Cell-inputWrapper">
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[4]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-     <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">!</span>qiime feature-table summarize <span class="err">\</span>
-  <span class="o">--</span><span class="n">i</span><span class="o">-</span><span class="n">table</span> <span class="n">data</span><span class="o">/</span><span class="n">intermediate</span><span class="o">/</span><span class="n">qiime2</span><span class="o">/</span><span class="mi">97</span><span class="n">otu</span><span class="o">/</span><span class="n">table</span><span class="o">-</span><span class="n">filtered</span><span class="o">-</span><span class="mi">97</span><span class="n">otu</span><span class="o">-</span><span class="n">sepp</span><span class="o">-</span><span class="n">inserted</span><span class="o">-</span><span class="n">digesta</span><span class="o">-</span><span class="n">no</span><span class="o">-</span><span class="n">control</span><span class="o">.</span><span class="n">qza</span> \
-  <span class="o">--</span><span class="n">m</span><span class="o">-</span><span class="n">sample</span><span class="o">-</span><span class="n">metadata</span><span class="o">-</span><span class="n">file</span> <span class="n">data</span><span class="o">/</span><span class="n">metadata</span><span class="o">.</span><span class="n">tsv</span> \
-  <span class="o">--</span><span class="n">o</span><span class="o">-</span><span class="n">visualization</span> <span class="n">data</span><span class="o">/</span><span class="n">intermediate</span><span class="o">/</span><span class="n">qiime2</span><span class="o">/</span><span class="mi">97</span><span class="n">otu</span><span class="o">/</span><span class="n">table</span><span class="o">-</span><span class="n">filtered</span><span class="o">-</span><span class="mi">97</span><span class="n">otu</span><span class="o">-</span><span class="n">sepp</span><span class="o">-</span><span class="n">inserted</span><span class="o">-</span><span class="n">digesta</span><span class="o">-</span><span class="n">no</span><span class="o">-</span><span class="n">control</span><span class="o">.</span><span class="n">qzv</span> 
-
-<span class="o">!</span>qiime feature-table summarize <span class="err">\</span>
-  <span class="o">--</span><span class="n">i</span><span class="o">-</span><span class="n">table</span> <span class="n">data</span><span class="o">/</span><span class="n">intermediate</span><span class="o">/</span><span class="n">qiime2</span><span class="o">/</span><span class="mi">97</span><span class="n">otu</span><span class="o">/</span><span class="n">table</span><span class="o">-</span><span class="n">filtered</span><span class="o">-</span><span class="mi">97</span><span class="n">otu</span><span class="o">-</span><span class="n">sepp</span><span class="o">-</span><span class="n">inserted</span><span class="o">-</span><span class="n">mucosa</span><span class="o">-</span><span class="n">feed</span><span class="o">-</span><span class="n">water</span><span class="o">-</span><span class="n">no</span><span class="o">-</span><span class="n">control</span><span class="o">.</span><span class="n">qza</span> \
-  <span class="o">--</span><span class="n">m</span><span class="o">-</span><span class="n">sample</span><span class="o">-</span><span class="n">metadata</span><span class="o">-</span><span class="n">file</span> <span class="n">data</span><span class="o">/</span><span class="n">metadata</span><span class="o">.</span><span class="n">tsv</span> \
-  <span class="o">--</span><span class="n">o</span><span class="o">-</span><span class="n">visualization</span> <span class="n">data</span><span class="o">/</span><span class="n">intermediate</span><span class="o">/</span><span class="n">qiime2</span><span class="o">/</span><span class="mi">97</span><span class="n">otu</span><span class="o">/</span><span class="n">table</span><span class="o">-</span><span class="n">filtered</span><span class="o">-</span><span class="mi">97</span><span class="n">otu</span><span class="o">-</span><span class="n">sepp</span><span class="o">-</span><span class="n">inserted</span><span class="o">-</span><span class="n">mucosa</span><span class="o">-</span><span class="n">feed</span><span class="o">-</span><span class="n">water</span><span class="o">-</span><span class="n">no</span><span class="o">-</span><span class="n">control</span><span class="o">.</span><span class="n">qzv</span> 
-</pre></div>
-
-     </div>
-</div>
-</div>
-</div>
-
-<div class="jp-Cell-outputWrapper">
-
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-    
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre><span class="ansi-green-fg">Saved Visualization to: data/intermediate/qiime2/97otu/table-filtered-97otu-sepp-inserted-digesta-no-control.qzv</span>
-<span class="ansi-green-fg">Saved Visualization to: data/intermediate/qiime2/97otu/table-filtered-97otu-sepp-inserted-mucosa-feed-water-no-control.qzv</span>
-</pre>
-</div>
-</div>
-
-</div>
-
-</div>
-
-</div>
-<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <h2 id="Beta-diversity-analysis">Beta diversity analysis<a class="anchor-link" href="#Beta-diversity-analysis">&#182;</a></h2>
 </div>
 </div>
@@ -14457,14 +14403,14 @@ qiime dev refresh-cache</code></pre>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">!</span>qiime diversity core-metrics-phylogenetic <span class="err">\</span>
   <span class="o">--</span><span class="n">i</span><span class="o">-</span><span class="n">phylogeny</span> <span class="n">data</span><span class="o">/</span><span class="n">intermediate</span><span class="o">/</span><span class="n">qiime2</span><span class="o">/</span><span class="mi">97</span><span class="n">otu</span><span class="o">/</span><span class="n">insertion</span><span class="o">-</span><span class="n">tree</span><span class="o">-</span><span class="mi">97</span><span class="n">otu</span><span class="o">.</span><span class="n">qza</span> \
   <span class="o">--</span><span class="n">i</span><span class="o">-</span><span class="n">table</span> <span class="n">data</span><span class="o">/</span><span class="n">intermediate</span><span class="o">/</span><span class="n">qiime2</span><span class="o">/</span><span class="mi">97</span><span class="n">otu</span><span class="o">/</span><span class="n">table</span><span class="o">-</span><span class="n">filtered</span><span class="o">-</span><span class="mi">97</span><span class="n">otu</span><span class="o">-</span><span class="n">sepp</span><span class="o">-</span><span class="n">inserted</span><span class="o">-</span><span class="n">digesta</span><span class="o">-</span><span class="n">no</span><span class="o">-</span><span class="n">control</span><span class="o">.</span><span class="n">qza</span> \
   <span class="o">--</span><span class="n">m</span><span class="o">-</span><span class="n">metadata</span><span class="o">-</span><span class="n">file</span> <span class="n">data</span><span class="o">/</span><span class="n">metadata</span><span class="o">.</span><span class="n">tsv</span> \
-  <span class="o">--</span><span class="n">p</span><span class="o">-</span><span class="n">sampling</span><span class="o">-</span><span class="n">depth</span> <span class="mi">43289</span> \
+  <span class="o">--</span><span class="n">p</span><span class="o">-</span><span class="n">sampling</span><span class="o">-</span><span class="n">depth</span> <span class="mi">10345</span> \
   <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">dir</span> <span class="n">data</span><span class="o">/</span><span class="n">intermediate</span><span class="o">/</span><span class="n">qiime2</span><span class="o">/</span><span class="mi">97</span><span class="n">otu</span><span class="o">/</span><span class="n">core</span><span class="o">-</span><span class="n">metrics</span><span class="o">-</span><span class="n">results</span><span class="o">-</span><span class="n">digesta</span>
 </pre></div>
 
@@ -14518,14 +14464,14 @@ qiime dev refresh-cache</code></pre>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[5]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">!</span>qiime diversity core-metrics-phylogenetic <span class="err">\</span>
   <span class="o">--</span><span class="n">i</span><span class="o">-</span><span class="n">phylogeny</span> <span class="n">data</span><span class="o">/</span><span class="n">intermediate</span><span class="o">/</span><span class="n">qiime2</span><span class="o">/</span><span class="mi">97</span><span class="n">otu</span><span class="o">/</span><span class="n">insertion</span><span class="o">-</span><span class="n">tree</span><span class="o">-</span><span class="mi">97</span><span class="n">otu</span><span class="o">.</span><span class="n">qza</span> \
   <span class="o">--</span><span class="n">i</span><span class="o">-</span><span class="n">table</span> <span class="n">data</span><span class="o">/</span><span class="n">intermediate</span><span class="o">/</span><span class="n">qiime2</span><span class="o">/</span><span class="mi">97</span><span class="n">otu</span><span class="o">/</span><span class="n">table</span><span class="o">-</span><span class="n">filtered</span><span class="o">-</span><span class="mi">97</span><span class="n">otu</span><span class="o">-</span><span class="n">sepp</span><span class="o">-</span><span class="n">inserted</span><span class="o">-</span><span class="n">mucosa</span><span class="o">-</span><span class="n">feed</span><span class="o">-</span><span class="n">water</span><span class="o">-</span><span class="n">no</span><span class="o">-</span><span class="n">control</span><span class="o">.</span><span class="n">qza</span> \
   <span class="o">--</span><span class="n">m</span><span class="o">-</span><span class="n">metadata</span><span class="o">-</span><span class="n">file</span> <span class="n">data</span><span class="o">/</span><span class="n">metadata</span><span class="o">.</span><span class="n">tsv</span> \
-  <span class="o">--</span><span class="n">p</span><span class="o">-</span><span class="n">sampling</span><span class="o">-</span><span class="n">depth</span> <span class="mi">5036</span> \
+  <span class="o">--</span><span class="n">p</span><span class="o">-</span><span class="n">sampling</span><span class="o">-</span><span class="n">depth</span> <span class="mi">10345</span> \
   <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">dir</span> <span class="n">data</span><span class="o">/</span><span class="n">intermediate</span><span class="o">/</span><span class="n">qiime2</span><span class="o">/</span><span class="mi">97</span><span class="n">otu</span><span class="o">/</span><span class="n">core</span><span class="o">-</span><span class="n">metrics</span><span class="o">-</span><span class="n">results</span><span class="o">-</span><span class="n">mucosa</span><span class="o">-</span><span class="n">feed</span><span class="o">-</span><span class="n">water</span>
 </pre></div>
 
@@ -14584,7 +14530,7 @@ qiime dev refresh-cache</code></pre>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[6]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">!</span>qiime deicode rpca <span class="err">\</span>
@@ -14637,7 +14583,7 @@ qiime dev refresh-cache</code></pre>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[7]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">!</span>qiime deicode rpca <span class="err">\</span>
