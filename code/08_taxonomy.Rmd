@@ -31,7 +31,8 @@ Load packages.
 ```{r load-package}
 library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
 library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
-library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN v1.1.1  
+library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN v1.1.1 
+library(patchwork) # The Composer of Plots, CRAN v1.1.1  
 library(ggpubr) # 'ggplot2' Based Publication Ready Plots, CRAN v0.4.0
 library(ggh4x) # Hacks for 'ggplot2', CRAN v0.1.2.1 
 library(ggtext) # Improved Text Rendering Support for 'ggplot2', CRAN v0.1.1
@@ -486,7 +487,7 @@ ovrl_bar_water <- ovrl %>%
 Assemble plots.
 
 ```{r, fig.width=8, fig.height=4}
-plot_grid(ovrl_bar_feed, ovrl_bar_water, nrow =  1) 
+ovrl_bar_feed + ovrl_bar_water  
 ```
 
 ## Abundance of OTUs shared
@@ -571,18 +572,31 @@ bp_shared_water <- shared_water %>%
 Assemble plots.
 
 ```{r, fig.width=6, fig.height=4}
-plot_grid(bp_shared_feed, bp_shared_water, nrow =  1) 
+bp_shared_feed + bp_shared_water
 ```
 
 ## Figure 2
 
-```{r, fig.width=7, fig.height=8}
-plot_grid(ovrl_bar_feed, bp_shared_feed, ovrl_bar_water, bp_shared_water, 
-          ncol = 2, align = "h", axis = "tb", rel_widths = c(1.5, 1), 
-          labels = c("a", "", "b", "")) 
+```{r, fig.width=5, fig.height=8}
+fig2a <- ovrl_bar_feed + bp_shared_feed +
+  plot_layout(guides = "collect") &
+  theme(
+    legend.position = "top",
+    legend.margin = margin(0, 0, 0, 0),
+    legend.box.margin = margin(0, 0, -10, 0))
 
+fig2b <- ovrl_bar_water + bp_shared_water +
+  plot_layout(guides = "collect")&
+  theme(
+    legend.position = "top",
+    legend.margin = margin(0, 0, 0, 0),
+    legend.box.margin = margin(0, 0, -10, 0))
+
+fig2a / fig2b +
+  plot_annotation(tag_levels = list(c("a", "", "b", "")))
+  
 # export plot
-ggsave(here("result/figure/Figure 2.tiff"), width = 7, height = 8,
+ggsave(here("result/figure/Figure 2.tiff"), width = 5, height = 8,
        units = "in", dpi = 300, compression = "lzw")
 ```
 
