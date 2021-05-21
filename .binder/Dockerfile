@@ -11,7 +11,13 @@ RUN apt-get update -y\
 && apt-get install -y git\
 && R -e "install.packages(c('BiocManager','devtools'))"\
 && R -e "BiocManager::install(c('biomformat','Biostrings','ComplexHeatmap','dada2','DECIPHER','decontam','microbiome','mixOmics','phangorn','philr','phyloseq','RUVSeq'))"\
-&& R -e "devtools::install_github(c('jbisanz/MicrobeR@9f4e593','jbisanz/qiime2R@077b08b','mikemc/speedyseq@8daed32','teunbrand/ggh4x@v0.1.2','jtleek/sva-devel@3f50493','biobakery/Maaslin2@1.4.0','rstudio/webshot2@f62e743'),upgrade='never')"
+&& R -e "devtools::install_github(c('jbisanz/MicrobeR@9f4e593','jbisanz/qiime2R@077b08b','mikemc/speedyseq@8daed32','teunbrand/ggh4x@v0.1.2','jtleek/sva-devel@3f50493','biobakery/Maaslin2@1.4.0','wch/webshot@v0.5.2'),upgrade='never')"
+
+# install phantomjs
+RUN R -e "webshot::install_phantomjs()"\
+&& cp ~/bin/phantomjs /usr/local/share/phantomjs\
+&& chmod 0755 /usr/local/share/phantomjs\
+&& ln -sf /usr/local/share/phantomjs /usr/local/bin
 
 USER ${NB_USER}
 
