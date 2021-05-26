@@ -33,7 +33,6 @@ library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
 library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
 library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN v1.1.1 
 library(patchwork) # The Composer of Plots, CRAN v1.1.1  
-library(ggpubr) # 'ggplot2' Based Publication Ready Plots, CRAN v0.4.0
 library(ggh4x) # Hacks for 'ggplot2', CRAN v0.1.2.1 
 library(ggtext) # Improved Text Rendering Support for 'ggplot2', CRAN v0.1.1
 library(PerformanceAnalytics) # Econometric Tools for Performance and Risk Analysis, CRAN v2.0.4
@@ -713,7 +712,7 @@ coreHmp_dt <- map(coreHmp_dt, function(x){
       Genus)) %>%
   select(Taxa, Genus, DetectionThreshold, Prevalence) %>%
   # italicize taxa names using R expressions
-  mutate(Taxa = paste0(Taxa, ":italic(", Genus, ")"),
+  mutate(Taxa = paste0("italic(", Genus, ")", "(", Taxa, ")"),
          # some taxa names contain space; tilde (~) is recognized as "space" in R expressions
          Taxa = gsub("\\s+", "~", Taxa), 
          Taxa = gsub("g__", "", Taxa),
@@ -726,7 +725,7 @@ coreHmp_dt <- map(coreHmp_dt, function(x){
 coreHm <- map2(coreHmp, coreHmp_dt, function(x, y) x$data <- y)
 
 # parse y axis text as R expression
-ylab <- map(coreHmp_dt, ~parse(text = gsub("OTU.*:", "", levels(.x$Taxa))))  
+ylab <- map(coreHmp_dt, ~parse(text = levels(.x$Taxa))) 
 
 # make new plots
 coreHmp <- map2(coreHmp, ylab, function(x, y) x + scale_y_discrete(labels = y)) 
@@ -734,20 +733,25 @@ coreHmp <- map2(coreHmp, ylab, function(x, y) x + scale_y_discrete(labels = y))
 
 ### Figure 3
 
-```{r, fig.width=8.5, fig.height=10}
-coreHmp <- ggarrange(
-  plotlist = coreHmp, 
+```{r, fig.width=10, fig.height=10}
+# assemble plots
+plot_grid(
+  coreHmp[[1]] + 
+    ylab("OTUs") +
+    theme(legend.position = "none"), 
+  coreHmp[[2]] +
+    theme(
+      plot.margin = margin(l = -0.5, unit = "cm"),
+      legend.margin = margin(0, 0, 0, 0),
+      legend.box.margin = margin(0, 0, 0, -5)
+    ), 
   nrow = 1, 
-  labels = c("OTUs", ""), 
-  label.y = 0.55, 
-  font.label = list(size = 10, face = "plain"), 
-  legend = "right", 
-  common.legend = TRUE)
-
-coreHmp
+  align = "h", 
+  axis = "tb", 
+  rel_widths = c(1, 1.1)) 
 
 # export plot
-ggsave(here("result/figure/Figure 3.tiff"), width = 8.5, height = 10,
+ggsave(here("result/figure/Figure 3.tiff"), width = 10, height = 10,
        units = "in", dpi = 300, compression = "lzw")
 ```
 
