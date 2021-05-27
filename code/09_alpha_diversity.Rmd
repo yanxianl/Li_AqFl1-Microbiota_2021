@@ -604,12 +604,10 @@ bp_wt_mcs <- alph_tm %>%
   geom_point(aes(color = SampleType)) +
   facet_wrap(~alph_indx, scales = "free_y", nrow = 1) +
   scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
-  scale_color_manual(values = c("grey50", brewer.pal(4, "Paired"))) +
-  labs(x = "Sample type", color = "Sample type") +
+  scale_color_manual(values = c("grey50", brewer.pal(2, "Paired"))) +
+  labs(x = "Sample type") +
   theme_bw(base_size = 12) +
   theme(legend.position = "none")
-
-bp_wt_mcs
 ```
 
 Add *p* values.
@@ -622,18 +620,48 @@ p_t.test <- ungroup(t_test) %>%
   y = c(120, 130, 0.92, 0.95, 5.3, 5.50, 40, 43))
 
 # add p value annotation
-bp_wt_mcs + geom_signif(
-  data = p_t.test,
-  aes(xmin = start, xmax = end, annotations = p_adj, y_position = y),
-  tip_length = 0.01,
-  textsize = 3,
-  parse = TRUE,
-  manual = T)
+bp_wt_mcs <- bp_wt_mcs + 
+  geom_signif(
+    data = p_t.test,
+    aes(xmin = start, xmax = end, annotations = p_adj, y_position = y),
+    tip_length = 0.01,
+    textsize = 3,
+    parse = TRUE,
+    manual = T
+    )
+
+bp_wt_mcs
+```
+
+Figure S2.
+
+```{r, fig.width=4, fig.height=4}
+alph_tm %>%
+  mutate(SampleType = factor(SampleType, levels = c("Water", "PIM", "DIM"))) %>%
+  filter(alph_indx %in% c("Shannon's index", "Faith's PD")) %>%
+  ggplot(aes(x = SampleType, y = value)) +
+  geom_boxplot(aes(color = SampleType)) +
+  geom_point(aes(color = SampleType)) +
+  geom_signif(
+    data = filter(p_t.test, alph_indx %in% c("Shannon's index", "Faith's PD")),
+    aes(xmin = start, xmax = end, annotations = p_adj, y_position = y),
+    tip_length = 0.01,
+    textsize = 3,
+    parse = TRUE,
+    manual = T
+    ) +
+  facet_wrap(~alph_indx, scales = "free_y", nrow = 1) +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
+  scale_color_manual(values = c("grey50", brewer.pal(2, "Paired"))) +
+  labs(x = "") +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "none")
 
 # export plot
-ggsave(here("result/figure/Figure S2.tiff"), width = 8, height = 4,
+ggsave(here("result/figure/Figure S2.tiff"), width = 4, height = 4,
        units = "in", dpi = 300, compression = "lzw")
 ```
+
 
 # Session information
 
