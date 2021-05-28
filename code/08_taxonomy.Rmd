@@ -450,7 +450,7 @@ ovrl_bar_feed <- ovrl %>%
   ggplot(aes(x = SampleType, y = n, fill = Category, label = n)) +
   geom_bar(stat = "identity") +
   geom_text(position = position_stack(vjust = 0.5), color = "white", size = 4) +
-  labs(x = "Comparment", y = "Number of OTUs") +
+  labs(x = "", y = "Number of OTUs") +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05))) + 
   scale_fill_manual(values = c("#B2DF8A", "grey50", "#33A02C")) +
   facet_nested(~ Diet + Site, scales = "free_x", nest_line = TRUE) +
@@ -471,7 +471,7 @@ ovrl_bar_water <- ovrl %>%
   ggplot(aes(x = SampleType, y = n, fill = Category, label = n)) +
   geom_bar(stat = "identity") +
   geom_text(position = position_stack(vjust = 0.5), color = "white", size = 4) +
-  labs(x = "Comparment", y = "Number of OTUs") +
+  labs(x = "", y = "Number of OTUs") +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05))) + 
   scale_fill_manual(values = c("#A6CEE3", "grey50", "#1F78B4")) +
   facet_nested(~ Diet + Site, scales = "free_x", nest_line = TRUE) +
@@ -540,7 +540,7 @@ bp_shared_feed <- ggplot(shared_feed, aes(x = Compartment, y = Abundance)) +
   geom_boxplot(fill = "grey50", width = 0.5) +
   geom_point() +
   facet_nested(~ Diet + Compartment, scales = "free_x", nest_line = TRUE) +
-  labs(x = "Comparment", y = "Relative abundance of shared OTUs (%)") +
+  labs(x = "", y = "Relative abundance of shared OTUs (%)") +
   scale_y_continuous(
     limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))
     ) + 
@@ -558,7 +558,7 @@ bp_shared_water <- shared_water %>%
     geom_boxplot(fill = "grey50", width = 0.5) +
     geom_point() +
     facet_nested(~ Diet + Compartment, scales = "free_x", nest_line = TRUE) +
-    labs(x = "Comparment", y = "Relative abundance of shared OTUs (%)") +
+    labs(x = "", y = "Relative abundance of shared OTUs (%)") +
     scale_y_continuous(
       limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))
       ) + 
@@ -576,26 +576,27 @@ bp_shared_feed + bp_shared_water
 
 ## Figure 2
 
-```{r, fig.width=5, fig.height=8}
-fig2a <- ovrl_bar_feed + bp_shared_feed +
-  plot_layout(guides = "collect") &
+```{r, fig.width=10, fig.height=5}
+fig2a <- ovrl_bar_feed + bp_shared_feed + 
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = list(c("a", ""))) &
   theme(
     legend.position = "top",
     legend.margin = margin(0, 0, 0, 0),
     legend.box.margin = margin(0, 0, -10, 0))
 
 fig2b <- ovrl_bar_water + bp_shared_water +
-  plot_layout(guides = "collect")&
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = list(c("b", ""))) &
   theme(
     legend.position = "top",
     legend.margin = margin(0, 0, 0, 0),
     legend.box.margin = margin(0, 0, -10, 0))
 
-fig2a / fig2b +
-  plot_annotation(tag_levels = list(c("a", "", "b", "")))
+wrap_elements(full = fig2a) | wrap_elements(full = fig2b) 
   
 # export plot
-ggsave(here("result/figure/Figure 2.tiff"), width = 5, height = 8,
+ggsave(here("result/figure/Figure 2.tiff"), width = 10, height = 5,
        units = "in", dpi = 300, compression = "lzw")
 ```
 
