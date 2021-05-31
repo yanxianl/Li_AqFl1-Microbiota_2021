@@ -1,7 +1,3 @@
-<!-- badges: start -->
-  [![Launch Rstudio Binder](http://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/yanxianl/Li_AqFl1-Microbiota_2020/master?urlpath=rstudio)
-  <!-- badges: end -->
-  
 ## Reproducible changes in the intestinal microbiota of Atlantic salmon fed diets containing black soldier fly larvae meal
 
 Being part of the natural diets of fish, insects have become a realistic, sustainable feed ingredient for aquaculture. While nutritional values of insects have been extensively studied in various fish species, their impact on the fish microbiota remains to be fully explored. In an 8-week freshwater feeding trial, Atlantic salmon (*Salmo salar*) were fed either a commercially relevant reference diet, or an insect meal diet wherein black soldier fly (*Hermetia illucens*) larvae meal comprised 60% of total ingredients. Microbiota of digesta and mucosa origin from the proximal and distal intestine were collected and profiled along with feed and water samples. The insect meal diet markedly modulated the salmon intestinal microbiota. Overall, the microbial diversity was lower in the digesta of salmon fed the insect meal diet but higher in the mucosa. A group of bacterial genera, dominated by members of the *Bacillaceae* family, were enriched in salmon fed the insect meal diet, which largely recapitulates our previous findings in a seawater feeding trial. We also found that feed microbiota showed a close resemblance to that observed in the intestine whereas water microbiota was distinct from the intestinal microbiota. Notably, bacterial genera associated with the diet effects were present in the feeds as well. In conclusion, our results show consistent changes in the intestinal microbiota of Atlantic salmon fed diets containing black soldier fly larvae meal.
@@ -80,29 +76,11 @@ root
 │   │   └── Figure S3.tiff
 │   └── table
 │       └── Table S1.csv
-├── DESCRIPTION
 ├── Li_AqFl1-Microbiota_2021.Rproj
 ├── LICENSE.md
 └── README.md
 ```
-### How to regenerate results
 
-Computationally lightweight RMarkdown files can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed. The instance has limited computational resources (1~2GB RAM) and is not intended for intensive computation (e.g., 01_dada2*.Rmd).
-
-To reproduce the figures and tables published with the paper, run the following RMarkdown files:
-
-* 03_filtering.Rmd
-  * Table S1
-* 08_taxonomy.Rmd    
-  * Figure 1-3, Figure S1
-* 09_alpha_-_diversity.Rmd 
-  * Figure 4, Figure S2
-* 10_beta_-_diversity.Rmd
-  * Figure 5, Figure S3
-  * Table 2
-* 11_multivariable_association.Rmd 
-  * Figure 6-7
-  
 ### How to regenerate this repository
 
 #### Dependencies and locations
@@ -248,6 +226,4 @@ Rscript -e "rmarkdown::render('code/11_multivariable_association.Rmd')"
 
 ### Acknowledgements
 
-The project organization was inspired by the Riffomonas project, maintained by Dr. Pat Schloss. Visit the [*Riffomonas*](http://www.riffomonas.org/) website for tutorials on reproducible data analysis in microbiome research. 
-
-The R package [holepunch](https://karthik.github.io/holepunch/) was used to make this repository [binder](https://mybinder.org/)-ready. 
+The project organization was inspired by the Riffomonas project, maintained by Dr. Pat Schloss. Visit the [*Riffomonas*](http://www.riffomonas.org/) website to check out tutorials on reproducible data analysis for microbiome research.
