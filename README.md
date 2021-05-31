@@ -89,7 +89,7 @@ root
 * [QIIME2 (2020.11)](https://docs.qiime2.org/2020.11/) should be installed within a Miniconda3 environment named as `qiime2-2020.11`.
   * QIIME2 library: [DEICODE (0.2.3)](https://library.qiime2.org/plugins/deicode/19/) should be installed within the qiime2 conda environment.
   * [grabseqs (0.7.0)](https://github.com/louiejtaylor/grabseqs) should be installed within the qiime2 conda environment.
-* [Pandoc (1.12.4.2)](https://pandoc.org/index.html) should be located in your PATH.
+* [Pandoc (2.5)](https://pandoc.org/index.html) should be located in your PATH.
 * R (4.0.5) should be located in your PATH.
 * R packages (packageName_version[source]): 
   * afex_0.28-1 [CRAN]
@@ -152,7 +152,7 @@ All the code should be run from the project's root directory.
 # clone the github repository
 git clone https://github.com/yanxianl/Li_AqFl1-Microbiota_2021.git
 
-# delete the following folders which would cause problems when computing beta-diversity metrics
+# delete the following folders which produce errors when computing beta-diversity metrics
 rm -rf \ 
 data/intermediate/qiime2/asv/core-metrics-results/ \ 
 data/intermediate/qiime2/asv/robust-Aitchison-pca/ \
@@ -163,7 +163,7 @@ data/intermediate/qiime2/97otu/core-metrics-results-digesta/ \
 data/intermediate/qiime2/97otu/core-metrics-results-mucosa-feed-water/ \
 data/intermediate/qiime2/97otu/robust-Aitchison-pca/ \ 
 data/intermediate/qiime2/97otu/robust-Aitchison-pca-digesta/ \ 
-data/intermediate/qiime2/97otu/robust-Aitchison-pca-mucosa-feed-water/ \ 
+data/intermediate/qiime2/97otu/robust-Aitchison-pca-mucosa-feed-water/
 ```
 2.Download raw sequence data, silva132 reference database and silva128 SEPP reference phylogeny.
 ```bash
