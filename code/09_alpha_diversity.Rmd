@@ -77,8 +77,8 @@ alph <- map_dfc(alph, ~.x$data) %>% # merge alpha diversity indices
     values_to = "value") %>%
   mutate(
     FishID = as.character(FishID), 
-    SampleOrigin = factor(
-      SampleOrigin, 
+    Source = factor(
+      Source, 
       levels = c("Digesta", "Mucosa", "Feed", "Water")
       ),
     alph_indx = factor(
@@ -95,12 +95,12 @@ alph <- map_dfc(alph, ~.x$data) %>% # merge alpha diversity indices
 ```{r, fig.width=6, fig.height=7}
 ggplot(alph, aes(x = Diet, y = value)) +
   geom_point(
-    aes(group = Compartment), 
+    aes(group = Segment), 
     alpha = 0.3, 
     position = position_dodge(0.5)) +
   stat_summary(
     data = filter(alph, !SampleType %in% c("Feed", "Water")),
-    aes(color = Compartment, group = Compartment), 
+    aes(color = Segment, group = Segment), 
     fun.data = "mean_sdl", 
     fun.args = list(mult = 1), 
     geom = "pointrange",  
@@ -108,14 +108,14 @@ ggplot(alph, aes(x = Diet, y = value)) +
     position = position_dodge(0.5)) +
   geom_line(
     data = filter(alph, !SampleType %in% c("Feed", "Water")) %>%
-      group_by(alph_indx, Diet, SampleOrigin, Compartment) %>% 
+      group_by(alph_indx, Diet, Source, Segment) %>% 
       summarise(m = mean(value)),
-    aes(y = m, color = Compartment, group = Compartment, linetype = Compartment), 
+    aes(y = m, color = Segment, group = Segment, linetype = Segment), 
     size = 0.5, 
     position = position_dodge(0.5)) + 
-  facet_grid(alph_indx ~ SampleOrigin, scales = "free_y") +
+  facet_grid(alph_indx ~ Source, scales = "free_y") +
   scale_color_brewer(palette = "Dark2") +
-  labs(color = "Compartment", linetype = "Compartment") +
+  labs(color = "Segment", linetype = "Segment") +
   theme_bw(base_size = 12) +
   theme(
     legend.position = "top",
@@ -133,7 +133,7 @@ Here we use the `mixed` function from the *afex* package to fit linear mixed eff
 
 ```{r, message=TRUE}
 # filter data
-alph_dgs <- filter(alph,  SampleOrigin == "Digesta") %>%
+alph_dgs <- filter(alph,  Source == "Digesta") %>%
   droplevels()
 
 # split data
@@ -142,7 +142,7 @@ alph_dgs_spl <- split(alph_dgs, alph_dgs$alph_indx)
 # fit model
 lme_dgs <- lapply(alph_dgs_spl, function(x) {
   mixed(
-    log1p(value) ~ Diet * Compartment + (1|FishID) + (1|Tank), 
+    log1p(value) ~ Diet * Segment + (1|FishID) + (1|Tank), 
     data = x, 
     method = "KR"
     )
@@ -162,7 +162,7 @@ The standard deviation of the random effect `FishID` is zero for Shannon's index
 lme_dgs1 <- lapply(lme_dgs, function(x){
   if(isSingular(x$full_model) == TRUE) { # remove random effect "FishID" if the model is singular
     mixed(
-      log1p(value) ~ Diet * Compartment + (1|Tank), data = x$data, method = "KR"
+      log1p(value) ~ Diet * Segment + (1|Tank), data = x$data, method = "KR"
       )
   } else {
     x
@@ -216,14 +216,14 @@ When the interaction between main factors is significant, marginal means average
 ```{r}
 # filter alpha-diversity indices showing significant interactions between the main effects
 intr_dgs <- lapply(lme_dgs1, function(x) {
-  ifelse(x$anova_table["Diet:Compartment", "Pr(>F)"] < 0.05, TRUE, FALSE)
+  ifelse(x$anova_table["Diet:Segment", "Pr(>F)"] < 0.05, TRUE, FALSE)
   }
 )
 
 # conditional contrasts
 cc_dgs <- mapply(function(x, y){
   # compute estimated marginal means 
-  emm <- emmeans(x, ~ Diet * Compartment)
+  emm <- emmeans(x, ~ Diet * Segment)
   # make conditional contrasts if the interaction is significant
   if (y == TRUE){
     contrast(
@@ -245,7 +245,7 @@ cc_dgs
 
 ```{r, message=TRUE}
 # filter data
-alph_mcs <- filter(alph,  SampleOrigin == "Mucosa") %>%
+alph_mcs <- filter(alph,  Source == "Mucosa") %>%
   droplevels()
 
 # split data
@@ -254,7 +254,7 @@ alph_mcs_spl <- split(alph_mcs, alph_mcs$alph_indx)
 # fit model
 lme_mcs <- lapply(alph_mcs_spl, function(x) {
   mixed(
-    log1p(value) ~ Diet * Compartment + (1|FishID) + (1|Tank), 
+    log1p(value) ~ Diet * Segment + (1|FishID) + (1|Tank), 
     data = x, 
     method = "KR"
     )
@@ -273,7 +273,7 @@ The standard deviation of random effect `FishID` is zero for all the alpha indic
 ```{r, message=TRUE}
 lme_mcs1 <- lapply(alph_mcs_spl, function(x) {
   mixed(
-    log1p(value) ~ Diet * Compartment + (1|Tank), data = x, method = "KR"
+    log1p(value) ~ Diet * Segment + (1|Tank), data = x, method = "KR"
     )
   }
 )
@@ -321,14 +321,14 @@ Conditional contrasts.
 ```{r}
 # filter alpha-diversity indices showing significant interactions between the main effects
 intr_mcs <- lapply(lme_mcs1, function(x) {
-  ifelse(x$anova_table["Diet:Compartment", "Pr(>F)"] < 0.05, TRUE, FALSE)
+  ifelse(x$anova_table["Diet:Segment", "Pr(>F)"] < 0.05, TRUE, FALSE)
   }
 )
 
 # Conditional contrasts
 cc_mcs <- mapply(function(x, y){
   # Compute estimated marginal means 
-  emm <- emmeans(x, ~ Diet * Compartment)
+  emm <- emmeans(x, ~ Diet * Segment)
 
   # Make conditional contrasts if the interaction is significant
   if (y == TRUE){
@@ -350,17 +350,17 @@ cc_mcs
 Aggregate alpha diversity of mucosa samples in each tank.
 
 ```{r}
-alph_tm <- filter(alph, SampleOrigin %in% c("Water", "Mucosa")) %>%
-  group_by(alph_indx, SampleOrigin, Compartment, Tank) %>%
+alph_tm <- filter(alph, Source %in% c("Water", "Mucosa")) %>%
+  group_by(alph_indx, Source, Segment, Tank) %>%
   summarise(value = mean(value)) %>%
   mutate(
     SampleType = case_when(
-      Compartment == "PI" ~ "PIM",
-      Compartment == "DI" ~ "DIM",
+      Segment == "PI" ~ "PIM",
+      Segment == "DI" ~ "DIM",
       TRUE ~ "Water")
     ) %>%
   ungroup() %>%
-  select(-Compartment, -SampleOrigin)
+  select(-Segment, -Source)
 ```
 
 Paired t-test.
@@ -402,12 +402,12 @@ Gather *p*-values of main effects and their interaction.
 # digesta samples 
 p_main_dgs <- lme_dgs %>% 
   map_dfr(~rownames_to_column(.x$anova_table, "term"), .id = "alph_indx") %>%
-  mutate(SampleOrigin = "Digesta")
+  mutate(Source = "Digesta")
 
 # mucosa samples 
 p_main_mcs <- lme_mcs1 %>% 
   map_dfr(~rownames_to_column(.x$anova_table, "term"), .id = "alph_indx") %>%
-  mutate(SampleOrigin = "Mucosa")
+  mutate(Source = "Mucosa")
 
 # merge and tidy data for main effect p value annotation
 p_main <- bind_rows(p_main_dgs, p_main_mcs) %>%
@@ -415,14 +415,14 @@ p_main <- bind_rows(p_main_dgs, p_main_mcs) %>%
   pivot_wider(names_from = term, values_from = "Pr(>F)") %>%
   mutate_if(is.numeric, ~formatC(.x, format = "f", digits = 3)) %>% # format p value
   mutate(
-    SampleOrigin =  factor(SampleOrigin, levels = c("Digesta", "Mucosa")),
+    Source =  factor(Source, levels = c("Digesta", "Mucosa")),
     # format text using markdown (ggtext)
     lab_main = paste0(
       paste0("Diet: *p* = ", Diet), # *p*, italic
      "<br>", # new line
-      paste0("Compartment: *p* = ", Compartment), 
+      paste0("Segment: *p* = ", Segment), 
       "<br>",
-      paste0("Interaction: *p* = ", `Diet:Compartment`)
+      paste0("Interaction: *p* = ", `Diet:Segment`)
      ),
     lab_main = gsub("= 0.000", "< 0.001", lab_main))
 ```
@@ -432,18 +432,18 @@ Gather *p*-values of post-hoc tests.
 ```{r}
 # digesta samples 
 p_cc_dgs <- bind_rows(cc_dgs, .id = "alph_indx") %>%
-  mutate(SampleOrigin = "Digesta")
+  mutate(Source = "Digesta")
 
 # mucosa samples 
 p_cc_mcs <- bind_rows(cc_mcs, .id = "alph_indx") %>%
-  mutate(SampleOrigin = "Mucosa")
+  mutate(Source = "Mucosa")
 
 # merge and tidy data for post-hoc test p value annotation
 p_cc <- bind_rows(p_cc_dgs, p_cc_mcs) %>%
-  mutate(SampleOrigin =  factor(SampleOrigin, levels = c("Digesta", "Mucosa"))) %>%
+  mutate(Source =  factor(Source, levels = c("Digesta", "Mucosa"))) %>%
   # the "end" comes before "start" because we need to use REF/PI as the starting point
   separate(contrast, sep = " - ", c("end", "start")) %>%
-  select(alph_indx, SampleOrigin, Diet, Compartment, start, end, p.value) %>%
+  select(alph_indx, Source, Diet, Segment, start, end, p.value) %>%
   rename(p = p.value) %>%
   arrange(
     match(alph_indx, c("Observed OTUs", "Pielou's evenness", "Shannon's index", "Faith's PD")),
@@ -457,14 +457,14 @@ p_cc <- bind_rows(p_cc_dgs, p_cc_mcs) %>%
     p = ifelse(p >= 0.05, "NS", p),
     # start and end position of horizontal bar on the x axis 
     start = case_when(
-      Diet == "REF" & Compartment == "." ~ 0.8,
-      Diet == "IM" & Compartment == "." ~ 1.8,
-      Diet == "." & Compartment == "PI" ~ 0.8,
+      Diet == "REF" & Segment == "." ~ 0.8,
+      Diet == "IM" & Segment == "." ~ 1.8,
+      Diet == "." & Segment == "PI" ~ 0.8,
       TRUE ~ 1.2),
     end = case_when(
-      Diet == "REF" & Compartment == "." ~ 1.2,
-      Diet == "IM" & Compartment == "." ~ 2.2,
-      Diet == "." & Compartment == "PI" ~ 1.8,
+      Diet == "REF" & Segment == "." ~ 1.2,
+      Diet == "IM" & Segment == "." ~ 2.2,
+      Diet == "." & Segment == "PI" ~ 1.8,
       TRUE ~ 2.2),
     # position of p value on the x axis 
     p_xpos = (start + end) / 2,
@@ -482,7 +482,7 @@ plist <- lapply(levels(alph$alph_indx), function(x) {
   alph_sub <- filter(alph, alph_indx == x)
   
   alph_m <- filter(alph_sub, !SampleType %in% c("Feed", "Water")) %>%
-    group_by(alph_indx, Diet, SampleOrigin, Compartment) %>% 
+    group_by(alph_indx, Diet, Source, Segment) %>% 
     summarise(m = mean(value))
   
   p_main_sub <- filter(p_main, alph_indx == x)
@@ -492,13 +492,13 @@ plist <- lapply(levels(alph$alph_indx), function(x) {
   # make plots
   ggplot(alph_sub, aes(x = Diet, y = value)) +
     geom_point(
-      aes(group = Compartment), 
+      aes(group = Segment), 
       alpha = 0.3, 
       position = position_dodge(0.8)) +
     # add data summary: mean ± sd
     stat_summary(
       data = filter(alph_sub, !SampleType %in% c("Feed", "Water")),
-      aes(color = Compartment, group = Compartment), 
+      aes(color = Segment, group = Segment), 
       fun.data = "mean_sdl", 
       fun.args = list(mult = 1), 
       geom = "pointrange",  
@@ -507,7 +507,7 @@ plist <- lapply(levels(alph$alph_indx), function(x) {
     # use line to show changes in the group means
     geom_line(
       data = alph_m,
-      aes(y = m, color = Compartment, group = Compartment, linetype = Compartment), 
+      aes(y = m, color = Segment, group = Segment, linetype = Segment), 
       size = 0.5, 
       position = position_dodge(0.8)) + 
     # add p values of main effects
@@ -528,10 +528,10 @@ plist <- lapply(levels(alph$alph_indx), function(x) {
       aes(x = p_xpos, y = y, label = p), 
       size = 3, 
       vjust = -0.1) +
-    facet_wrap(~SampleOrigin, nrow = 1) +
+    facet_wrap(~Source, nrow = 1) +
     scale_color_brewer(palette = "Dark2") +
     scale_y_continuous(expand = expansion(mult = c(0.03, 0.4))) +
-    labs(x = "", y = x, color = "Compartment", linetype = "Compartment") +
+    labs(x = "", y = x, color = "Segment", linetype = "Segment") +
     theme_bw(base_size = 12) +
     theme(legend.position = "top", strip.text.y = element_blank())
   }
@@ -573,13 +573,13 @@ For simplicity, we'll only show Shannon's index and Faith's PD in the Figure 4.
 
 ```{r, fig.width=7, fig.height=6}
 plot_grid(
-  plist[[3]] + 
+  plist[[4]] + 
     theme(
       axis.text.x = element_blank(), 
       legend.margin = margin(0, 0, 0, 0),
       legend.box.margin = margin(0, 0, -8, 0)
       ),
-  plist[[4]] +
+  plist[[3]] +
     labs(x = "Diet") +
     theme(
       legend.position = "none",

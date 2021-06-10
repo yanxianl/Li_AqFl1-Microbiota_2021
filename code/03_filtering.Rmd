@@ -67,7 +67,7 @@ mtd <- rename(mtd, SampleID = "#SampleID") %>%
            DilutedDNAConcentration * DNADilutionFactor),
          DNAExtractionBatch = as.character(DNAExtractionBatch),
          Diet = factor(Diet, levels = c("REF", "IM")),
-         Compartment = factor(Compartment, levels = c("PI", "DI")),
+         Segment = factor(Segment, levels = c("PI", "DI")),
          SampleType = factor(SampleType, levels = c("REF-PID", "REF-PIM", "REF-DID", "REF-DIM", 
                                                     "IM-PID", "IM-PIM", "IM-DID", "IM-DIM", 
                                                     "Feed", "Water", "Extraction-blank", 

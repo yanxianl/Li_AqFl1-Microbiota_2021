@@ -50,9 +50,9 @@ mtd <- read_tsv(here("data/metadata.tsv"), comment = "#q2") %>%
   rename(SampleID = "#SampleID") %>% 
   column_to_rownames("SampleID") %>% 
   mutate(Diet = factor(Diet, levels = c("REF", "IM")),
-         Compartment = factor(Compartment, levels = c("PI", "DI")),
-         SampleOrigin = factor(
-           SampleOrigin, 
+         Segment = factor(Segment, levels = c("PI", "DI")),
+         Source = factor(
+           Source, 
            levels = c("Feed", "Water", "Digesta", "Mucosa", 
                       "Mock", "DNA-extraction", "Amplicon-PCR")),
          SampleType = factor(

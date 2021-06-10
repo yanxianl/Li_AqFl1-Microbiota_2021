@@ -248,14 +248,14 @@ taxa_tab <- as.data.frame(taxa_tab) %>%
 col <- c("grey", brewer.pal(n = 10, name = "Paired"))
 
 # digesta samples
-taxa_bar_digesta <- filter(taxa_tab, SampleOrigin == "Digesta") %>%
+taxa_bar_digesta <- filter(taxa_tab, Source == "Digesta") %>%
   ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
   geom_bar(stat = "identity") +
   labs(x = "", y = "Relative abundance (%)") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
   facet_nested(
-    ~ SampleOrigin + Diet + Compartment, 
+    ~ Source + Diet + Segment, 
     scales = "free_x", 
     nest_line = TRUE
     ) +
@@ -265,14 +265,14 @@ taxa_bar_digesta <- filter(taxa_tab, SampleOrigin == "Digesta") %>%
         legend.position = "none") 
 
 # mucosa samples  
-taxa_bar_mucosa <- filter(taxa_tab, SampleOrigin == "Mucosa") %>%
+taxa_bar_mucosa <- filter(taxa_tab, Source == "Mucosa") %>%
   ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
   geom_bar(stat = "identity") +
   labs(x = "", y = "") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
   facet_nested(
-    ~ SampleOrigin + Diet + Compartment, 
+    ~ Source + Diet + Segment, 
     scales = "free_x", 
     nest_line = TRUE
     ) +
@@ -293,7 +293,7 @@ taxa_bar_feed <- filter(taxa_tab, SampleType == "Feed") %>%
   labs(x = "", y = "") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
-  facet_nested(~ SampleOrigin + Diet, scales = "free_x", nest_line = TRUE) +
+  facet_nested(~ Source + Diet, scales = "free_x", nest_line = TRUE) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         axis.text.y = element_blank(),
@@ -307,7 +307,7 @@ taxa_bar_water <- filter(taxa_tab, SampleType == "Water") %>%
   labs(x = "", y = "") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
-  facet_wrap(~ SampleOrigin) +
+  facet_wrap(~ Source) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         axis.text.y = element_blank(),
@@ -508,9 +508,9 @@ shared_feed <- map(seq_along(shared_feed), function(x){
   data.frame(Abundance = shared_feed[[x]]) %>%
   rownames_to_column("SampleID") %>%
   inner_join(rownames_to_column(mtd, "SampleID"), by = "SampleID") %>%
-  filter(Diet == names(shared_feed)[x] & !SampleOrigin %in% c("Feed", "Water")) %>%
-  mutate(Compartment = ifelse(Compartment == "PI", "PIM", "DIM"),
-         Compartment = factor(Compartment, levels = c("PIM", "DIM"))) %>%
+  filter(Diet == names(shared_feed)[x] & !Source %in% c("Feed", "Water")) %>%
+  mutate(Segment = ifelse(Segment == "PI", "PIM", "DIM"),
+         Segment = factor(Segment, levels = c("PIM", "DIM"))) %>%
   mutate(Abundance = round(100 * Abundance, 1))}) %>%
   bind_rows()
 ```
@@ -525,9 +525,9 @@ shared_water <- prune_taxa(names(which(prvl[["Water"]] > 0)), ps_tss) %>%
 shared_water <- data.frame(Abundance = shared_water) %>%
   rownames_to_column("SampleID") %>%
   inner_join(rownames_to_column(mtd, "SampleID"), by = "SampleID") %>%
-  filter(!SampleOrigin %in% c("Feed", "Water")) %>%
-  mutate(Compartment = ifelse(Compartment == "PI", "PIM", "DIM"),
-         Compartment = factor(Compartment, levels = c("PIM", "DIM"))) %>%
+  filter(!Source %in% c("Feed", "Water")) %>%
+  mutate(Segment = ifelse(Segment == "PI", "PIM", "DIM"),
+         Segment = factor(Segment, levels = c("PIM", "DIM"))) %>%
   mutate(Abundance = round(100 * Abundance, 1))
 ```
 
@@ -536,10 +536,10 @@ shared_water <- data.frame(Abundance = shared_water) %>%
 Abundance of shared OTUs between feed and intestinal mucosa.
 
 ```{r}
-bp_shared_feed <- ggplot(shared_feed, aes(x = Compartment, y = Abundance)) +
+bp_shared_feed <- ggplot(shared_feed, aes(x = Segment, y = Abundance)) +
   geom_boxplot(fill = "grey50", width = 0.5) +
   geom_point() +
-  facet_nested(~ Diet + Compartment, scales = "free_x", nest_line = TRUE) +
+  facet_nested(~ Diet + Segment, scales = "free_x", nest_line = TRUE) +
   labs(x = "", y = "Relative abundance of shared OTUs (%)") +
   scale_y_continuous(
     limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))
@@ -554,10 +554,10 @@ Abundance of shared OTUs between water and intestinal mucosa
 
 ```{r}
 bp_shared_water <- shared_water %>%
-  ggplot(aes(x = Compartment, y = Abundance)) +
+  ggplot(aes(x = Segment, y = Abundance)) +
     geom_boxplot(fill = "grey50", width = 0.5) +
     geom_point() +
-    facet_nested(~ Diet + Compartment, scales = "free_x", nest_line = TRUE) +
+    facet_nested(~ Diet + Segment, scales = "free_x", nest_line = TRUE) +
     labs(x = "", y = "Relative abundance of shared OTUs (%)") +
     scale_y_continuous(
       limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))
@@ -609,8 +609,8 @@ Data preprocessing.
 ```{r}
 # subset phyloseq
 ps_core <- list(
-  REF = subset_samples(ps, Diet == "REF" & !SampleOrigin %in% c("Feed", "Water")),
-  IM = subset_samples(ps, Diet == "IM" & !SampleOrigin %in% c("Feed", "Water"))
+  REF = subset_samples(ps, Diet == "REF" & !Source %in% c("Feed", "Water")),
+  IM = subset_samples(ps, Diet == "IM" & !Source %in% c("Feed", "Water"))
   )
 
 # data filtering and transformation

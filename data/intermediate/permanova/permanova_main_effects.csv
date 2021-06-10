@@ -1,3 +1,3 @@
-SampleOrigin,Diet,Compartment,Interaction
-Digesta,0.001,0.049,0.036
-Mucosa,0.001*,0.647,0.014
+Source,Diet,Segment,Interaction
+Digesta,0.001,0.041,0.041
+Mucosa,0.001*,0.633,0.01

@@ -82,15 +82,15 @@ ps <- readRDS(here("data/intermediate/qiime2R/phyloseq.rds"))
 ```{r}
 # filter samples
 ps <- ps %>%
-  subset_samples(SampleOrigin %in% c("Feed", "Digesta", "Mucosa")) %>%
+  subset_samples(Source %in% c("Feed", "Digesta", "Mucosa")) %>%
   subset_samples(!(IsTechnicalReplicate == "yes" & PCRBatch == 2))
 
 # extract metadata, OTU table and taxonomy 
 mtd <- data.frame(sample_data(ps), check.names = FALSE) %>%
   rownames_to_column("SampleID") %>%
   mutate(FishID = as.character(FishID)) %>%
-  # standardize qPCR data for each intestinal compartment
-  group_by(Compartment) %>%
+  # standardize qPCR data for each intestinal Segment
+  group_by(Segment) %>%
   mutate(across(contains("qPCR_"), ~scale(.x))) %>%
   ungroup() %>%
   # remove prefix in gene names
@@ -141,7 +141,7 @@ taxa_l6 <- Summarize.Taxa(otu, txnm)$Genus %>%
 
 # Exploratory data analysis
 
-For the multivariable association analysis, `Diet` and `Compartment` are the main fixed effects we're interested in. We're also interested in potential associations between intestinal microbial clades and gene expression data, which have been published elsewhere ([doi: 10.1016/j.fsi.2018.12.057](https://doi.org/10.1016/j.fsi.2018.12.057)). Based on existing literature, we know that microbiota is related to intestinal immunity and lipid metabolism (digestion, absorption and transport). Before running Maaslin2, let's perform some exploratory data analyses.
+For the multivariable association analysis, `Diet` and `Segment` are the main fixed effects we're interested in. We're also interested in potential associations between intestinal microbial clades and gene expression data, which have been published elsewhere ([doi: 10.1016/j.fsi.2018.12.057](https://doi.org/10.1016/j.fsi.2018.12.057)). Based on existing literature, we know that microbiota is related to intestinal immunity and lipid metabolism (digestion, absorption and transport). Before running Maaslin2, let's perform some exploratory data analyses.
 
 ### qPCR: immune reponses
 
@@ -149,15 +149,15 @@ Gene expression profile.
 
 ```{r, fig.width=6, fig.height=4}
 # filter gene expression data related to immune responses 
-qpcr_immn <- filter(mtd, SampleOrigin == "Mucosa") %>%
-  select(Diet, Compartment, cd3γδ:tgfβ1)
+qpcr_immn <- filter(mtd, Source == "Mucosa") %>%
+  select(Diet, Segment, cd3γδ:tgfβ1)
   
 # gene expression profile
 qpcr_immn %>%
   pivot_longer(cd3γδ:tgfβ1, names_to = "gene", values_to = "rel_expr") %>%
   ggplot(aes(x = Diet, y = rel_expr)) +
     geom_boxplot(outlier.shape = NA) +
-    geom_point(aes(color = Compartment), position = position_jitterdodge(0.2)) +
+    geom_point(aes(color = Segment), position = position_jitterdodge(0.2)) +
     facet_wrap(~gene, ncol = 4) +
     labs(y = "Standardize expression") +
     theme_bw(base_size = 12) +
@@ -177,15 +177,15 @@ Gene expression profile.
 
 ```{r, fig.width=6, fig.height=6}
 # filter gene expression data related to lipid metabolism in the intestine
-qpcr_lipid  <- filter(mtd, SampleOrigin == "Mucosa") %>%
-  select(Diet, Compartment, fabp2b, cd36:cyp51)
+qpcr_lipid  <- filter(mtd, Source == "Mucosa") %>%
+  select(Diet, Segment, fabp2b, cd36:cyp51)
   
 # gene expression profile
 qpcr_lipid %>%
   pivot_longer(fabp2b:cyp51, names_to = "gene", values_to = "rel_expr") %>%
   ggplot(aes(x = Diet, y = rel_expr)) +
     geom_boxplot(outlier.shape = NA) +
-    geom_point(aes(color = Compartment), position = position_jitterdodge(0.2)) +
+    geom_point(aes(color = Segment), position = position_jitterdodge(0.2)) +
     facet_wrap(~gene, ncol = 3) +
     labs(y = "Standardize expression") +
     theme_bw(base_size = 12) +
@@ -199,7 +199,7 @@ select(qpcr_lipid, fabp2b:cyp51) %>%
   chart.Correlation(mhistogram = TRUE, pch = 19)
 ```
 
-Based on the existing literature and the above exploratory data analysis, we include *foxp3* and *plin2* in the multivariable association analysis in addition to the main effects `Diet` and `Compartment`.
+Based on the existing literature and the above exploratory data analysis, we include *foxp3* and *plin2* in the multivariable association analysis in addition to the main effects `Diet` and `Segment`.
 
 # Multivariable association analysis
 
@@ -207,7 +207,7 @@ Define fixed and random effects.
 
 ```{r}
 # Fixed effects
-fixef <- c("Diet", "Compartment", "foxp3", "plin2") 
+fixef <- c("Diet", "Segment", "foxp3", "plin2") 
 
 # Random effects
 ranef <- c("FishID", "Tank")
@@ -219,7 +219,7 @@ ranef <- c("FishID", "Tank")
 
 ```{r}
 # metadata
-mtd_dgs <- filter(mtd, SampleOrigin == "Digesta")  
+mtd_dgs <- filter(mtd, Source == "Digesta")  
 
 # feature table
 taxa_l6_dgs <- select(taxa_l6, rownames(mtd_dgs))
@@ -262,7 +262,7 @@ fit_dgs_results <- filter(fit_dgs$results) %>%
     feature = gsub("\\.", " ", feature))
 
 # add feed samples to the feature table
-mtd_dgs_fd <- filter(mtd, SampleOrigin %in% c("Feed", "Digesta"))
+mtd_dgs_fd <- filter(mtd, Source %in% c("Feed", "Digesta"))
 taxa_l6_dgs_fd <- select(taxa_l6, rownames(mtd_dgs_fd)) %>%
   mutate(across(everything(), ~.x/sum(.x)))
 
@@ -337,7 +337,7 @@ draw(
 ```{r, fig.width=11, fig.height=38}
 # filter features showing significant associations with Diet
 sigAss_dgs_diet <- sigAss_dgs %>% 
-  filter(metadata == "Diet" & SampleOrigin != "Feed") %>%
+  filter(metadata == "Diet" & Source != "Feed") %>%
   # add the number of non-zero observations in each diet to the text annotation
   group_by(feature, Diet) %>%
   summarize(N = n(), N_notzero = paste0(sum(Abundance != 0), "/", N)) %>%
@@ -348,13 +348,13 @@ sigAss_dgs_diet <- sigAss_dgs %>%
   mutate(ann_ctg = paste0(ann_ctg, "\n", ann_extra))
 
 # plotting
-filter(sigAss_dgs_diet, SampleOrigin == "Digesta") %>%
+filter(sigAss_dgs_diet, Source == "Digesta") %>%
 ggplot(aes(x = Diet, y = Abundance)) +
   geom_boxplot(width = 0.5, outlier.shape = NA) +
-  geom_jitter(aes(color = Compartment), position = position_jitter(0.2)) +
+  geom_jitter(aes(color = Segment), position = position_jitter(0.2)) +
   # highlight taxa abundance in the feed samples
   geom_point(
-    data = filter(sigAss_dgs_diet, SampleOrigin == "Feed"),
+    data = filter(sigAss_dgs_diet, Source == "Feed"),
     color = "#666666", size = 3) +
   geom_text(
     aes(x = Inf, y = Inf, label = ann_ctg), 
@@ -367,25 +367,25 @@ ggplot(aes(x = Diet, y = Abundance)) +
   scale_color_manual(values = brewer.pal(4, "Dark2")[c(1:2)]) 
 ```
 
-#### Compartment
+#### Segment
 
 ```{r, fig.width=11, fig.height=12}
-# filter features showing significant associations with Compartment
+# filter features showing significant associations with Segment
 sigAss_dgs_cmprt <- sigAss_dgs %>% 
-  filter(metadata == "Compartment" & SampleOrigin != "Feed")
+  filter(metadata == "Segment" & Source != "Feed")
 
 # add the number of non-zero observations to the text annotation
 sigAss_dgs_cmprt <- sigAss_dgs_cmprt %>%
-  group_by(feature, Compartment) %>%
+  group_by(feature, Segment) %>%
   summarize(N = n(), N_notzero = paste0(sum(Abundance != 0), "/", N)) %>%
-  mutate(ann_extra = paste0("N.not.zero(", Compartment, "): ", N_notzero)) %>%
+  mutate(ann_extra = paste0("N.not.zero(", Segment, "): ", N_notzero)) %>%
   group_by(feature) %>%
   summarize(ann_extra = paste(ann_extra, collapse = "\n")) %>%
   inner_join(sigAss_dgs_cmprt, by = "feature") %>%
   mutate(ann_ctg = paste0(ann_ctg, "\n", ann_extra))
 
 # plotting
-ggplot(sigAss_dgs_cmprt, aes(x = Compartment, y = Abundance)) +
+ggplot(sigAss_dgs_cmprt, aes(x = Segment, y = Abundance)) +
   geom_boxplot(width = 0.5, outlier.shape = NA) +
   geom_jitter(aes(color = Diet), position = position_jitter(0.2)) +
   geom_text(
@@ -408,7 +408,7 @@ scatter_dgs <- lapply(
     
   var <- ensym(x)
     
-  filter(sigAss_dgs, metadata == rlang::as_name(var) & SampleOrigin != "Feed") %>%
+  filter(sigAss_dgs, metadata == rlang::as_name(var) & Source != "Feed") %>%
   ggplot(aes(x = !!var, y = log(Abundance))) +
     geom_point(aes(color = Diet), size = 2) +
     geom_smooth(color = "#666666", method = "lm", fill = NA) +
@@ -454,14 +454,14 @@ fig6b_taxa_name <- c(
 
 # plot
 fig6b <- sigAss_dgs_diet %>% 
-  filter(SampleOrigin == "Digesta" & feature %in% fig6b_taxa_name) %>%
+  filter(Source == "Digesta" & feature %in% fig6b_taxa_name) %>%
   mutate(feature = factor(feature, levels = fig6b_taxa_name)) %>%
   ggplot(aes(x = Diet, y = Abundance)) +
     geom_boxplot(width = 0.5, outlier.shape = NA) +
-    geom_jitter(aes(color = Compartment), position = position_jitter(0.2))  +
+    geom_jitter(aes(color = Segment), position = position_jitter(0.2))  +
     geom_point(
       data = sigAss_dgs_diet %>%
-        filter(SampleOrigin == "Feed" & feature %in% fig6b_taxa_name) %>%
+        filter(Source == "Feed" & feature %in% fig6b_taxa_name) %>%
         mutate(feature = factor(feature, levels = fig6b_taxa_name)), 
       color = "#666666", size = 3) +
     geom_text(
@@ -490,14 +490,14 @@ fig6c_taxa_name <- c(
 # plot
 fig6c <- filter(
   sigAss_dgs_diet, 
-  SampleOrigin == "Digesta" & feature %in% fig6c_taxa_name) %>%
+  Source == "Digesta" & feature %in% fig6c_taxa_name) %>%
   mutate(feature = factor(feature, levels = fig6c_taxa_name)) %>%
   ggplot(aes(x = Diet, y = Abundance)) +
     geom_boxplot(width = 0.5, outlier.shape = NA) +
-    geom_jitter(aes(color = Compartment), position = position_jitter(0.2))  +
+    geom_jitter(aes(color = Segment), position = position_jitter(0.2))  +
     geom_point(
       data = sigAss_dgs_diet %>%
-        filter(SampleOrigin == "Feed" & feature %in% fig6c_taxa_name) %>%
+        filter(Source == "Feed" & feature %in% fig6c_taxa_name) %>%
         mutate(feature = factor(feature, levels = fig6c_taxa_name)), 
       color = "#666666", size = 3) +
     geom_text(
@@ -546,7 +546,7 @@ ggsave(here("result", "figure", "Figure 6.tiff"), width = 10, height = 12,
 
 ```{r}
 # metadata
-mtd_mcs <- filter(mtd, SampleOrigin == "Mucosa")  
+mtd_mcs <- filter(mtd, Source == "Mucosa")  
 
 # feature table
 taxa_l6_mcs <- select(taxa_l6, rownames(mtd_mcs))
@@ -585,7 +585,7 @@ fit_mcs_results <- filter(fit_mcs$results) %>%
     feature = gsub("\\.", " ", feature))
 
 # add feed samples to the feature table
-mtd_mcs_fd <- filter(mtd, SampleOrigin %in% c("Feed", "Mucosa")) 
+mtd_mcs_fd <- filter(mtd, Source %in% c("Feed", "Mucosa")) 
 taxa_l6_mcs_fd <- select(taxa_l6, rownames(mtd_mcs_fd)) %>%
   mutate(across(everything(), ~.x/sum(.x)))
 
@@ -649,7 +649,7 @@ draw(
 ```{r, fig.width=11, fig.height=16}
 # filter features showing significant associations with Diet
 sigAss_mcs_diet <- sigAss_mcs %>% 
-  filter(metadata == "Diet" & SampleOrigin != "Feed") %>%
+  filter(metadata == "Diet" & Source != "Feed") %>%
   group_by(feature, Diet) %>%
   summarize(N = n(), N_notzero = paste0(sum(Abundance != 0), "/", N)) %>%
   mutate(ann_extra = paste0("N.not.zero(", Diet, "): ", N_notzero)) %>%
@@ -659,12 +659,12 @@ sigAss_mcs_diet <- sigAss_mcs %>%
   mutate(ann_ctg = paste0(ann_ctg, "\n", ann_extra))
 
 # plotting
-filter(sigAss_mcs_diet, SampleOrigin == "Mucosa") %>%
+filter(sigAss_mcs_diet, Source == "Mucosa") %>%
 ggplot(aes(x = Diet, y = Abundance)) +
   geom_boxplot(width = 0.5, outlier.shape = NA) +
-  geom_jitter(aes(color = Compartment), position = position_jitter(0.2)) +
+  geom_jitter(aes(color = Segment), position = position_jitter(0.2)) +
   geom_point(
-    data = filter(sigAss_mcs_diet, SampleOrigin == "Feed"),
+    data = filter(sigAss_mcs_diet, Source == "Feed"),
     color = "#666666", size = 3) +
   geom_text(
     aes(x = Inf, y = Inf, label = ann_ctg), 
@@ -677,25 +677,25 @@ ggplot(aes(x = Diet, y = Abundance)) +
   scale_color_manual(values = brewer.pal(4, "Dark2")[c(1:2)])   
 ```
 
-#### Compartment
+#### Segment
 
 ```{r, fig.width=11, fig.height=5}
-# filter features showing significant associations with Compartment
+# filter features showing significant associations with Segment
 sigAss_mcs_cmprt <- sigAss_mcs %>% 
-  filter(metadata == "Compartment" & SampleOrigin != "Feed")
+  filter(metadata == "Segment" & Source != "Feed")
 
 # add the number of non-zero observations to the text annotation
 sigAss_mcs_cmprt <- sigAss_mcs_cmprt %>%
-  group_by(feature, Compartment) %>%
+  group_by(feature, Segment) %>%
   summarize(N = n(), N_notzero = paste0(sum(Abundance != 0), "/", N)) %>%
-  mutate(ann_extra = paste0("N.not.zero(", Compartment, "): ", N_notzero)) %>%
+  mutate(ann_extra = paste0("N.not.zero(", Segment, "): ", N_notzero)) %>%
   group_by(feature) %>%
   summarize(ann_extra = paste(ann_extra, collapse = "\n")) %>%
   inner_join(sigAss_mcs_cmprt, by = "feature") %>%
   mutate(ann_ctg = paste0(ann_ctg, "\n", ann_extra))
 
 # plotting
-ggplot(sigAss_mcs_cmprt, aes(x = Compartment, y = Abundance)) +
+ggplot(sigAss_mcs_cmprt, aes(x = Segment, y = Abundance)) +
   geom_boxplot(width = 0.5, outlier.shape = NA) +
   geom_jitter(aes(color = Diet), position = position_jitter(0.2)) +
   geom_text(
@@ -718,7 +718,7 @@ scatter_mcs <- lapply(
     
   var <- ensym(x)
     
-  filter(sigAss_mcs, metadata == rlang::as_name(var) & SampleOrigin != "Feed") %>%
+  filter(sigAss_mcs, metadata == rlang::as_name(var) & Source != "Feed") %>%
   ggplot(aes(x = !!var, y = log(Abundance))) +
     geom_point(aes(color = Diet), size = 2) +
     geom_smooth(color = "#666666", method = "lm", fill = NA) +
@@ -763,14 +763,14 @@ fig7b_taxa_name <- c(
 
 # plot
 fig7b <- sigAss_mcs_diet %>% 
-  filter(SampleOrigin == "Mucosa" & feature %in% fig7b_taxa_name) %>%
+  filter(Source == "Mucosa" & feature %in% fig7b_taxa_name) %>%
   mutate(feature = factor(feature, levels = fig7b_taxa_name)) %>%
   ggplot(aes(x = Diet, y = Abundance)) +
     geom_boxplot(width = 0.5, outlier.shape = NA) +
-    geom_jitter(aes(color = Compartment), position = position_jitter(0.2))  +
+    geom_jitter(aes(color = Segment), position = position_jitter(0.2))  +
     geom_point(
       data = sigAss_mcs_diet %>%
-        filter(SampleOrigin == "Feed" & feature %in% fig7b_taxa_name) %>%
+        filter(Source == "Feed" & feature %in% fig7b_taxa_name) %>%
         mutate(feature = factor(feature, levels = fig7b_taxa_name)), 
       color = "#666666", size = 3) +
     geom_text(
@@ -799,14 +799,14 @@ fig7c_taxa_name <- c(
 # plot
 fig7c <- filter(
   sigAss_mcs_diet, 
-  SampleOrigin == "Mucosa" & feature %in% fig7c_taxa_name) %>%
+  Source == "Mucosa" & feature %in% fig7c_taxa_name) %>%
   mutate(feature = factor(feature, levels = fig7c_taxa_name)) %>%
   ggplot(aes(x = Diet, y = Abundance)) +
     geom_boxplot(width = 0.5, outlier.shape = NA) +
-    geom_jitter(aes(color = Compartment), position = position_jitter(0.2))  +
+    geom_jitter(aes(color = Segment), position = position_jitter(0.2))  +
     geom_point(
       data = sigAss_mcs_diet %>%
-        filter(SampleOrigin == "Feed" & feature %in% fig7c_taxa_name) %>%
+        filter(Source == "Feed" & feature %in% fig7c_taxa_name) %>%
         mutate(feature = factor(feature, levels = fig7c_taxa_name)), 
       color = "#666666", size = 3) +
     geom_text(
@@ -827,7 +827,7 @@ Highlight the positive association between *Paenibacillus* and *foxp3*.
 
 ```{r, fig.width=3, fig.height=4}
 fig7d <- sigAss_mcs %>%
-  filter(metadata == "foxp3" & SampleOrigin != "Feed") %>%
+  filter(metadata == "foxp3" & Source != "Feed") %>%
   filter(feature == "Paenibacillus") %>%
   ggplot(aes(x = foxp3, y = log(Abundance))) +
     geom_point(aes(color = Diet), size = 2) +
@@ -851,7 +851,7 @@ Highlight the negative association between *Enterococcus* and *plin2*.
 
 ```{r, fig.width=3, fig.height=4}
 fig7e <- sigAss_mcs %>%
-  filter(metadata == "plin2" & SampleOrigin != "Feed") %>%
+  filter(metadata == "plin2" & Source != "Feed") %>%
   filter(feature == "Enterococcus") %>%
   ggplot(aes(x = plin2, y = log(Abundance))) +
     geom_point(aes(color = Diet), size = 2) +

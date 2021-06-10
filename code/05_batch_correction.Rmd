@@ -56,9 +56,9 @@ mtd <- read_tsv(here("data/metadata.tsv"), comment = "#q2") %>%
   column_to_rownames("SampleID") %>% 
   mutate(PCRBatch   = factor(PCRBatch),
          Diet = factor(Diet, levels = c("REF", "IM")),
-         Compartment = factor(Compartment, levels = c("PI", "DI")),
-         SampleOrigin = factor(
-           SampleOrigin, 
+         Segment = factor(Segment, levels = c("PI", "DI")),
+         Source = factor(
+           Source, 
            levels = c("Feed", "Water", "Digesta", "Mucosa",
                       "Mock", "DNA-extraction", "Amplicon-PCR")),
          SampleType = factor(
@@ -415,7 +415,7 @@ taxa_bar_water <- filter(taxa_tab, SampleType == "Water") %>%
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
   guides(fill=guide_legend(ncol=1)) +
-  facet_wrap(~ SampleOrigin) +
+  facet_wrap(~ Source) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         axis.text.y = element_blank(),
@@ -430,7 +430,7 @@ taxa_bar_feed <- filter(taxa_tab, SampleType == "Feed") %>%
   labs(x = "Sample", y = "") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
-  facet_nested(~ SampleOrigin + Diet, scales = "free_x", nest_line = TRUE) +
+  facet_nested(~ Source + Diet, scales = "free_x", nest_line = TRUE) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         axis.text.y = element_blank(),
@@ -445,7 +445,7 @@ taxa_bar_ref <- filter(taxa_tab, !(IsTechnicalReplicate == "yes" & PCRBatch == 2
   labs(x = "", y = "Relative abundance (%)") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
-  facet_nested(~ Diet + SampleOrigin + Compartment, scales = "free_x", nest_line = TRUE) +
+  facet_nested(~ Diet + Source + Segment, scales = "free_x", nest_line = TRUE) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         strip.background = element_blank(),
@@ -459,7 +459,7 @@ taxa_bar_im <- filter(taxa_tab, !(IsTechnicalReplicate == "yes" & PCRBatch == 2)
   labs(x = "", y = "") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
-  facet_nested(~ Diet + SampleOrigin + Compartment, scales = "free_x", nest_line = TRUE) +
+  facet_nested(~ Diet + Source + Segment, scales = "free_x", nest_line = TRUE) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         axis.text.y = element_blank(),

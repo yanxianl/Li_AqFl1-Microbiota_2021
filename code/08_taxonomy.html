@@ -11,7 +11,7 @@
 
 <meta name="author" content="Yanxian Li Department of Paraclinical Sciences Faculty of Veterinary Medicine Norwegian University of Life Sciences" />
 
-<meta name="date" content="2021-05-28" />
+<meta name="date" content="2021-06-10" />
 
 <title>Taxonomic analysis</title>
 
@@ -263,7 +263,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Taxonomic analysis</h1>
 <h4 class="author">Yanxian Li<br><small>Department of Paraclinical Sciences<br>Faculty of Veterinary Medicine<br>Norwegian University of Life Sciences</small></h4>
-<h4 class="date"><small>2021-05-28</small></h4>
+<h4 class="date"><small>2021-06-10</small></h4>
 
 </div>
 
@@ -341,8 +341,8 @@ mtd &lt;- data.frame(sample_data(ps), check.names = FALSE)</code></pre>
 
 txnm_assg %&gt;%
   datatable(options = list(columnDefs = list(list(className = &#39;dt-left&#39;, targets = c(0:3)))))</code></pre>
-<div id="htmlwidget-43d0628996780ea9f581" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-43d0628996780ea9f581">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7"],["Kingdom","Phylum","Class","Order","Family","Genus","Species"],[932,932,921,906,844,745,169],["100 %","100 %","98.8 %","97.2 %","90.6 %","79.9 %","18.1 %"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Rank<\/th>\n      <th>OTUs_classified<\/th>\n      <th>Frac_classified<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-left","targets":[0,1,2,3]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-9f50feacc668847388bd" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-9f50feacc668847388bd">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7"],["Kingdom","Phylum","Class","Order","Family","Genus","Species"],[932,932,921,906,844,745,169],["100 %","100 %","98.8 %","97.2 %","90.6 %","79.9 %","18.1 %"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Rank<\/th>\n      <th>OTUs_classified<\/th>\n      <th>Frac_classified<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-left","targets":[0,1,2,3]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 <p>We can tell that the majority of OTUs were assigned at the genus level whereas only 18.1 % of OTUs got a species-level annotation.</p>
 </div>
 <div id="taxa-barplot" class="section level1" number="3">
@@ -480,14 +480,14 @@ taxa_tab &lt;- rbind(taxa_tab[1:10, ], Others)</code></pre>
 col &lt;- c(&quot;grey&quot;, brewer.pal(n = 10, name = &quot;Paired&quot;))
 
 # digesta samples
-taxa_bar_digesta &lt;- filter(taxa_tab, SampleOrigin == &quot;Digesta&quot;) %&gt;%
+taxa_bar_digesta &lt;- filter(taxa_tab, Source == &quot;Digesta&quot;) %&gt;%
   ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
   geom_bar(stat = &quot;identity&quot;) +
   labs(x = &quot;&quot;, y = &quot;Relative abundance (%)&quot;) +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
   facet_nested(
-    ~ SampleOrigin + Diet + Compartment, 
+    ~ Source + Diet + Segment, 
     scales = &quot;free_x&quot;, 
     nest_line = TRUE
     ) +
@@ -497,14 +497,14 @@ taxa_bar_digesta &lt;- filter(taxa_tab, SampleOrigin == &quot;Digesta&quot;) %&g
         legend.position = &quot;none&quot;) 
 
 # mucosa samples  
-taxa_bar_mucosa &lt;- filter(taxa_tab, SampleOrigin == &quot;Mucosa&quot;) %&gt;%
+taxa_bar_mucosa &lt;- filter(taxa_tab, Source == &quot;Mucosa&quot;) %&gt;%
   ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
   geom_bar(stat = &quot;identity&quot;) +
   labs(x = &quot;&quot;, y = &quot;&quot;) +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
   facet_nested(
-    ~ SampleOrigin + Diet + Compartment, 
+    ~ Source + Diet + Segment, 
     scales = &quot;free_x&quot;, 
     nest_line = TRUE
     ) +
@@ -525,7 +525,7 @@ taxa_bar_feed &lt;- filter(taxa_tab, SampleType == &quot;Feed&quot;) %&gt;%
   labs(x = &quot;&quot;, y = &quot;&quot;) +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
-  facet_nested(~ SampleOrigin + Diet, scales = &quot;free_x&quot;, nest_line = TRUE) +
+  facet_nested(~ Source + Diet, scales = &quot;free_x&quot;, nest_line = TRUE) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         axis.text.y = element_blank(),
@@ -539,7 +539,7 @@ taxa_bar_water &lt;- filter(taxa_tab, SampleType == &quot;Water&quot;) %&gt;%
   labs(x = &quot;&quot;, y = &quot;&quot;) +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
-  facet_wrap(~ SampleOrigin) +
+  facet_wrap(~ Source) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
         axis.text.y = element_blank(),
@@ -722,9 +722,9 @@ shared_feed &lt;- map(seq_along(shared_feed), function(x){
   data.frame(Abundance = shared_feed[[x]]) %&gt;%
   rownames_to_column(&quot;SampleID&quot;) %&gt;%
   inner_join(rownames_to_column(mtd, &quot;SampleID&quot;), by = &quot;SampleID&quot;) %&gt;%
-  filter(Diet == names(shared_feed)[x] &amp; !SampleOrigin %in% c(&quot;Feed&quot;, &quot;Water&quot;)) %&gt;%
-  mutate(Compartment = ifelse(Compartment == &quot;PI&quot;, &quot;PIM&quot;, &quot;DIM&quot;),
-         Compartment = factor(Compartment, levels = c(&quot;PIM&quot;, &quot;DIM&quot;))) %&gt;%
+  filter(Diet == names(shared_feed)[x] &amp; !Source %in% c(&quot;Feed&quot;, &quot;Water&quot;)) %&gt;%
+  mutate(Segment = ifelse(Segment == &quot;PI&quot;, &quot;PIM&quot;, &quot;DIM&quot;),
+         Segment = factor(Segment, levels = c(&quot;PIM&quot;, &quot;DIM&quot;))) %&gt;%
   mutate(Abundance = round(100 * Abundance, 1))}) %&gt;%
   bind_rows()</code></pre>
 <p>Compute the abundance of shared OTUs between water and intestinal mucosa.</p>
@@ -735,18 +735,18 @@ shared_feed &lt;- map(seq_along(shared_feed), function(x){
 shared_water &lt;- data.frame(Abundance = shared_water) %&gt;%
   rownames_to_column(&quot;SampleID&quot;) %&gt;%
   inner_join(rownames_to_column(mtd, &quot;SampleID&quot;), by = &quot;SampleID&quot;) %&gt;%
-  filter(!SampleOrigin %in% c(&quot;Feed&quot;, &quot;Water&quot;)) %&gt;%
-  mutate(Compartment = ifelse(Compartment == &quot;PI&quot;, &quot;PIM&quot;, &quot;DIM&quot;),
-         Compartment = factor(Compartment, levels = c(&quot;PIM&quot;, &quot;DIM&quot;))) %&gt;%
+  filter(!Source %in% c(&quot;Feed&quot;, &quot;Water&quot;)) %&gt;%
+  mutate(Segment = ifelse(Segment == &quot;PI&quot;, &quot;PIM&quot;, &quot;DIM&quot;),
+         Segment = factor(Segment, levels = c(&quot;PIM&quot;, &quot;DIM&quot;))) %&gt;%
   mutate(Abundance = round(100 * Abundance, 1))</code></pre>
 </div>
 <div id="plotting-1" class="section level3" number="4.2.2">
 <h3 number="4.2.2"><span class="header-section-number">4.2.2</span> Plotting</h3>
 <p>Abundance of shared OTUs between feed and intestinal mucosa.</p>
-<pre class="r"><code>bp_shared_feed &lt;- ggplot(shared_feed, aes(x = Compartment, y = Abundance)) +
+<pre class="r"><code>bp_shared_feed &lt;- ggplot(shared_feed, aes(x = Segment, y = Abundance)) +
   geom_boxplot(fill = &quot;grey50&quot;, width = 0.5) +
   geom_point() +
-  facet_nested(~ Diet + Compartment, scales = &quot;free_x&quot;, nest_line = TRUE) +
+  facet_nested(~ Diet + Segment, scales = &quot;free_x&quot;, nest_line = TRUE) +
   labs(x = &quot;&quot;, y = &quot;Relative abundance of shared OTUs (%)&quot;) +
   scale_y_continuous(
     limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))
@@ -757,10 +757,10 @@ shared_water &lt;- data.frame(Abundance = shared_water) %&gt;%
         legend.position = &quot;none&quot;)</code></pre>
 <p>Abundance of shared OTUs between water and intestinal mucosa</p>
 <pre class="r"><code>bp_shared_water &lt;- shared_water %&gt;%
-  ggplot(aes(x = Compartment, y = Abundance)) +
+  ggplot(aes(x = Segment, y = Abundance)) +
     geom_boxplot(fill = &quot;grey50&quot;, width = 0.5) +
     geom_point() +
-    facet_nested(~ Diet + Compartment, scales = &quot;free_x&quot;, nest_line = TRUE) +
+    facet_nested(~ Diet + Segment, scales = &quot;free_x&quot;, nest_line = TRUE) +
     labs(x = &quot;&quot;, y = &quot;Relative abundance of shared OTUs (%)&quot;) +
     scale_y_continuous(
       limits = c(0, 100), breaks = 0:10*10, expand = expansion(c(0, 0))
@@ -806,8 +806,8 @@ ggsave(here(&quot;result/figure/Figure 2.tiff&quot;), width = 10, height = 5,
 <p>Data preprocessing.</p>
 <pre class="r"><code># subset phyloseq
 ps_core &lt;- list(
-  REF = subset_samples(ps, Diet == &quot;REF&quot; &amp; !SampleOrigin %in% c(&quot;Feed&quot;, &quot;Water&quot;)),
-  IM = subset_samples(ps, Diet == &quot;IM&quot; &amp; !SampleOrigin %in% c(&quot;Feed&quot;, &quot;Water&quot;))
+  REF = subset_samples(ps, Diet == &quot;REF&quot; &amp; !Source %in% c(&quot;Feed&quot;, &quot;Water&quot;)),
+  IM = subset_samples(ps, Diet == &quot;IM&quot; &amp; !Source %in% c(&quot;Feed&quot;, &quot;Water&quot;))
   )
 
 # data filtering and transformation

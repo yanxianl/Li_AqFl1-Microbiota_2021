@@ -156,7 +156,7 @@ ggsave(here("result/figure/Figure 5.tiff"),
 
 ## Export distance matrix
 
-To compare the `Diet` and `Compartment` effect, we need to run two-way PERMANOVA with 2 nested random effects (`FishID` and `Tank`). Unfortunately, this can't be done in R. We export the distance matrix and run PERMANOVA using the PERMANOVA+ add-on from the [PRIMER v7](https://www.primer-e.com/our-software/permanova-add-on/).
+To compare the `Diet` and `Segment` effect, we need to run two-way PERMANOVA with 2 nested random effects (`FishID` and `Tank`). Unfortunately, this can't be done in R. We export the distance matrix and run PERMANOVA using the PERMANOVA+ add-on from the [PRIMER v7](https://www.primer-e.com/our-software/permanova-add-on/).
 
 Digesta.
 
@@ -171,7 +171,7 @@ dist_subset(dist_dgs, rpca_dgs$SampleID) %>% # subset distance matrix
 Mucosa and water.
 
 ```{r}
-filter(rpca_mcsFdWt, SampleOrigin %in% c("Mucosa", "Water")) %>% # get sample ids of mucosa and water samples
+filter(rpca_mcsFdWt, Source %in% c("Mucosa", "Water")) %>% # get sample ids of mucosa and water samples
   pull(SampleID) %>%
   dist_subset(dist_mcsFdWt, .) %>% # subset distance matrix
   as.matrix() %>%
@@ -190,9 +190,9 @@ pmanova_main <- read_csv(here("data/intermediate/permanova/permanova_main_effect
 # remove artisks which are indicative of Monte Carlo p values
 pmanova_main1 <- pmanova_main %>%
   mutate(across(where(is.character), ~gsub("\\*", "", .x))) %>% 
-  column_to_rownames("SampleOrigin") %>%
+  column_to_rownames("Source") %>%
   mutate(across(everything(), as.numeric)) %>%
-  rownames_to_column("SampleOrigin")
+  rownames_to_column("Source")
 ```
 
 Import *p*-values of conditional contrasts.
@@ -203,14 +203,14 @@ pmanova_cc <- read_csv(here("data/intermediate/permanova/permanova_conditional_c
 # apply multiple testing correction to p values of conditional contrast 
 pmanova_cc1 <- pmanova_cc %>% 
   mutate(across(where(is.character), ~gsub("\\*", "", .x))) %>%
-  column_to_rownames("SampleOrigin") %>%
+  column_to_rownames("Source") %>%
   mutate(across(everything(), as.numeric)) %>%
   t() %>%
   apply(2, function(x) p.adjust(x, method = "BH")) %>%
   apply(2, function(x) round(x, digits = 3)) %>%
   t() %>%
   as.data.frame() %>%
-  rownames_to_column("SampleOrigin")
+  rownames_to_column("Source")
 ```
 
 ## Table 2 
@@ -218,8 +218,7 @@ pmanova_cc1 <- pmanova_cc %>%
 Merge and format tables.
 
 ```{r}
-pmanova <- full_join(pmanova_main1, pmanova_cc1, by = "SampleOrigin") %>%
-  rename("Sample origin" = SampleOrigin) %>%
+pmanova <- full_join(pmanova_main1, pmanova_cc1, by = "Source") %>%
   gt() %>%
   tab_header(title = "PERMANOVA") %>%
   tab_spanner(label = "Main effects", columns = 2:3) %>%
@@ -242,7 +241,7 @@ PERMANOVA tests differences in both location and dispersion effects. Although PE
 
 ## Digesta
 
-The PERMANOVA results suggested little evidence of `Tank` effect. Thus, we use individual fish for the testing of homogeneity of multivariate dispersion. As there's a significant interaction between the `Diet` and `Compartment` effect, we assess homogeneity of multivariate dispersion for each main effect stratified by the levels of the remaining main effect.
+The PERMANOVA results suggested little evidence of `Tank` effect. Thus, we use individual fish for the testing of homogeneity of multivariate dispersion. As there's a significant interaction between the `Diet` and `Segment` effect, we assess homogeneity of multivariate dispersion for each main effect stratified by the levels of the remaining main effect.
 
 Compute beta-dispersion.
 
@@ -304,13 +303,13 @@ dispVis_dgs
 
 ## Mucosa
 
-The PERMANOVA results suggested little evidence of `Compartment` effect. We only need to check the homogeneity of multivariate dispersion for the other main effect,`Diet`.
+The PERMANOVA results suggested little evidence of `Segment` effect. We only need to check the homogeneity of multivariate dispersion for the other main effect,`Diet`.
 
 ### Filter data
 
 ```{r}
 # filter data to keep mucosa samples only
-rpca_mcs <- filter(rpca_mcsFdWt, SampleOrigin == "Mucosa")
+rpca_mcs <- filter(rpca_mcsFdWt, Source == "Mucosa")
 
 # subset distance matrix
 dist_mcs <- dist_subset(dist_mcsFdWt, rpca_mcs$SampleID) 
