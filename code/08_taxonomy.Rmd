@@ -42,6 +42,7 @@ library(MicrobeR) # Handy functions for microbiome analysis in R, [github::jbisa
 library(microbiome) # Microbiome Analytics, Bioconductor v1.12.0
 library(speedyseq) # Faster implementations of phyloseq functions, [github::mikemc/speedyseq] v0.5.3.9001  #
 library(flextable) # Functions for Tabular Reporting, CRAN v0.6.1  
+library(webshot2) # Take Screenshots of Web Pages, [github::rstudio/webshot2] v0.0.0.9000
 library(officer) # Manipulation of Microsoft Word and PowerPoint Documents, CRAN v0.3.16     
 library(DT) # A Wrapper of the JavaScript Library 'DataTables', CRAN v0.17 
 ```
@@ -328,8 +329,8 @@ xlab <- ggdraw() +
   theme(plot.margin = margin(t = -0.5, unit = "cm"))
 
 # add the x axis label
-taxa_bar <- plot_grid(taxa_bar, xlab, ncol = 1, rel_heights = c(10, 1))
-taxa_bar
+taxa_bar_noLgnd <- plot_grid(taxa_bar, xlab, ncol = 1, rel_heights = c(10, 1))
+taxa_bar_noLgnd
 ```
 
 ### Modify legend
@@ -337,7 +338,8 @@ taxa_bar
 Modify legend using flextable.
 
 ```{r}
-lgnd <- unique(taxa_tab[ , c("Genus", "Phylum")]) %>%
+# legend to flextable
+lgnd_ft <- unique(taxa_tab[ , c("Genus", "Phylum")]) %>%
   #arrange(factor(Genus, levels = levels(taxa_tab$Genus))) %>%
   mutate(col = 10, .before = Genus) %>% # legend color
   flextable() %>% 
@@ -356,18 +358,22 @@ lgnd <- unique(taxa_tab[ , c("Genus", "Phylum")]) %>%
   hline(i = c(1, 2), border = fp_border(width = 2), part = "body") %>% # draw horizontal lines
   hline_top(part = "header", border = fp_border(color = "white")) # remove horizontal line in the table header
 
-# convert flextable into a ggplot object
-lgnd <- as_raster(lgnd, webshot = "webshot")
+# flextable to raster
+lgnd_rst <- as_raster(lgnd_ft, webshot = "webshot2") 
 
-lgnd <- ggplot() + 
+# raster to ggplot
+lgnd_gg <- ggplot() + 
   theme_void() + 
-  annotation_custom(grid::rasterGrob(lgnd, y = unit(0.5, "npc"))) # top right: y = unit(0.72, "npc")
+  annotation_custom(grid::rasterGrob(lgnd_rst, y = unit(0.5, "npc"))) # top right: y = unit(0.72, "npc")
 ```
 
 ### Figure 1
 
 ```{r, fig.width=10, fig.height=6}
-taxa_bar <- plot_grid(taxa_bar, lgnd, nrow =  1, align = 'h', rel_widths = c(4, 1)) 
+taxa_bar <- plot_grid(
+  taxa_bar_noLgnd, lgnd_gg, nrow =  1, align = 'h', rel_widths = c(4, 1)
+  ) 
+
 taxa_bar
 
 # export plot
