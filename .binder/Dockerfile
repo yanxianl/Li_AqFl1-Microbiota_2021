@@ -31,7 +31,6 @@ RUN R -e "install.packages(c('BiocManager','remotes'))"\
 && R -e "remotes::install_version('knitr',version='1.33',dependencies=TRUE,upgrade='never')"\
 && R -e "remotes::install_version('magick',version='2.7.1',dependencies=TRUE,upgrade='never')"\
 && R -e "remotes::install_version('officer',version='0.3.18',dependencies=TRUE,upgrade='never')"\
-&& R -e "remotes::install_version('parallel',version='4.0.5',dependencies=TRUE,upgrade='never')"\
 && R -e "remotes::install_version('patchwork',version='1.1.1',dependencies=TRUE,upgrade='never')"\
 && R -e "remotes::install_version('PerformanceAnalytics',version='2.0.4',dependencies=TRUE,upgrade='never')"\
 && R -e "remotes::install_version('plotly',version='4.9.3',dependencies=TRUE,upgrade='never')"\
