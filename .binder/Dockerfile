@@ -9,9 +9,9 @@ RUN apt-get update -y\
 && apt-get install -y dpkg-dev zlib1g-dev libssl-dev libffi-dev\
 && apt-get install -y curl libcurl4-openssl-dev\
 && apt-get install -y git\
-&& R -e "install.packages(c('BiocManager','devtools'))"\
+&& R -e "install.packages(c('BiocManager','remotes'))"\
 && R -e "BiocManager::install(c('biomformat','Biostrings','ComplexHeatmap','dada2','DECIPHER','decontam','microbiome','mixOmics','phangorn','philr','phyloseq','RUVSeq'))"\
-&& R -e "devtools::install_github(c('jbisanz/MicrobeR@9f4e593','jbisanz/qiime2R@077b08b','mikemc/speedyseq@8daed32','teunbrand/ggh4x@v0.1.2','jtleek/sva-devel@3f50493','biobakery/Maaslin2@1.4.0','rstudio/webshot2@83aad5d'),dependencies=TRUE,upgrade='always')"
+&& R -e "remotes::install_github(c('jbisanz/MicrobeR@9f4e593','jbisanz/qiime2R@077b08b','mikemc/speedyseq@8daed32','teunbrand/ggh4x@v0.1.2','jtleek/sva-devel@3f50493','biobakery/Maaslin2@1.4.0','rstudio/chromote@e423b4b','rstudio/webshot2@83aad5d'),dependencies=TRUE,upgrade='always')"
 
 USER ${NB_USER}
 
