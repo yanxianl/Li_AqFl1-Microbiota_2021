@@ -65,8 +65,8 @@ RUN R -e "BiocManager::install('biomformat')"\
 RUN R -e "remotes::install_github('jbisanz/MicrobeR@9f4e593',dependencies=TRUE,upgrade='never')"\
 && R -e "remotes::install_github('jbisanz/qiime2R@077b08b',dependencies=TRUE,upgrade='never')"\
 && R -e "remotes::install_github('mikemc/speedyseq@8daed32',dependencies=TRUE,upgrade='never')"\
-&& R -e "remotes::install_github('rstudio/chromote',dependencies=TRUE,upgrade='never')"\
-&& R -e "remotes::install_github('dmurdoch/webshot2@fixlockup',dependencies=TRUE,upgrade='never')"
+&& R -e "remotes::install_github('rstudio/chromote@e423b4b',dependencies=TRUE,upgrade='never')"\
+&& R -e "remotes::install_github('rstudio/webshot2@83aad5d',dependencies=TRUE,upgrade='never')"
 
 USER ${NB_USER}
 
