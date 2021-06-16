@@ -132,7 +132,6 @@ To reproduce the figures and tables published with the paper, run the following 
   * ggsignif_0.6.1 [CRAN] 
   * ggstatsplot_0.7.2 [CRAN]
   * ggtext_0.1.1 [CRAN]
-  * grid_4.0.5 [CRAN]
   * gt_0.2.2 [CRAN]
   * here_1.0.1 [CRAN]
   * Hmisc_4.5-0 [CRAN]
@@ -162,7 +161,7 @@ To reproduce the figures and tables published with the paper, run the following 
   * tidyverse_1.3.1 [CRAN]
   * usedist_0.4.0 [CRAN]
   * vegan_2.5-7 [CRAN]
-  * webshot_0.5.2 [CRAN]
+  * webshot2_0.0.0.9000 [github::rstudio/webshot2]
   
 #### Running the analysis
 
