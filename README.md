@@ -142,7 +142,6 @@ To reproduce the figures and tables published with the paper, run the following 
   * microbiome_1.12.0 [Bioconductor 3.12] 
   * mixOmics_6.14.0 [Bioconductor 3.12]
   * officer_0.3.18 [CRAN]
-  * parallel_4.0.5 [CRAN]
   * patchwork_1.1.1 [CRAN]
   * PerformanceAnalytics_2.0.4 [CRAN]
   * phangorn_2.6.3 [Bioconductor 3.12]
