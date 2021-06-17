@@ -14,18 +14,18 @@ RUN apt-get update -y\
 RUN R -e "install.packages(c('BiocManager','remotes'))"
 
 # install bioconductor packages
-RUN R -e "BiocManager::install('biomformat',version='3.12')"\
-&& R -e "BiocManager::install('Biostrings',version='3.12')"\
-&& R -e "BiocManager::install('ComplexHeatmap',version='3.12')"\
-&& R -e "BiocManager::install('dada2',version='3.12')"\
-&& R -e "BiocManager::install('DECIPHER',version='3.12')"\
-&& R -e "BiocManager::install('decontam',version='3.12')"\
-&& R -e "BiocManager::install('microbiome',version='3.12')"\
-&& R -e "BiocManager::install('mixOmics',version='3.12')"\
-&& R -e "BiocManager::install('phangorn',version='3.12')"\
-&& R -e "BiocManager::install('philr',version='3.12')"\
-&& R -e "BiocManager::install('phyloseq',version='3.12')"\
-&& R -e "BiocManager::install('RUVSeq',version='3.12')"
+RUN R -e "BiocManager::install('biomformat')"\
+&& R -e "BiocManager::install('Biostrings')"\
+&& R -e "BiocManager::install('ComplexHeatmap')"\
+&& R -e "BiocManager::install('dada2')"\
+&& R -e "BiocManager::install('DECIPHER')"\
+&& R -e "BiocManager::install('decontam')"\
+&& R -e "BiocManager::install('microbiome')"\
+&& R -e "BiocManager::install('mixOmics')"\
+&& R -e "BiocManager::install('phangorn')"\
+&& R -e "BiocManager::install('philr')"\
+&& R -e "BiocManager::install('phyloseq')"\
+&& R -e "BiocManager::install('RUVSeq')"
 
 # install packages from GitHub
 RUN R -e "remotes::install_github('jbisanz/MicrobeR@9f4e593',upgrade='always')"\
