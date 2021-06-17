@@ -160,7 +160,7 @@ To reproduce the figures and tables published with the paper, run the following 
   * tidyverse_1.3.1 [CRAN]
   * usedist_0.4.0 [CRAN]
   * vegan_2.5-7 [CRAN]
-  * webshot2_0.0.0.9000 [github::rstudio/webshot2@83aad5d]
+  * webshot2_0.0.0.9000 [github::rstudio/webshot2]
   
 #### Running the analysis
 
