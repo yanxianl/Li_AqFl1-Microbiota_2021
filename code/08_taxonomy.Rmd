@@ -396,12 +396,12 @@ prvl <- list()
 
 for (i in c("REF-PIM", "REF-DIM", "IM-PIM", "IM-DIM", "Water")) {
     prvl[[i]] <- subset_samples(ps_tss, SampleType == i) %>%
-      prevalence(detection = 0.001, count = TRUE, include.lowest = TRUE)
+      prevalence(detection = 0.0005, count = TRUE, include.lowest = TRUE)
 }
 
 for (i in c("FeedREF", "FeedIM")) {
     prvl[[i]] <- subset_samples(ps_tss, SampleName == i) %>%
-      prevalence(detection = 0.001, count = TRUE, include.lowest = TRUE)
+      prevalence(detection = 0.0005, count = TRUE, include.lowest = TRUE)
 }
 ```
 
