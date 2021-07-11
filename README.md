@@ -1,6 +1,7 @@
 ## Consistent changes in the intestinal microbiota of Atlantic salmon fed insect meal diets
+### doi: https://doi.org/10.1101/2021.07.04.451034
 
-Being part of fish's natural diets, insects have become a realistic, sustainable feed ingredient for aquaculture. While nutritional values of insects have been extensively studied in various fish species, their impact on the fish microbiota remains to be fully explored. In an 8-week freshwater feeding trial, Atlantic salmon (*Salmo salar*) were fed either a commercially relevant reference diet or an insect meal diet wherein black soldier fly (*Hermetia illucens*) larvae meal comprised 60% of total ingredients. Microbiota of digesta and mucosa origin from the proximal and distal intestine were collected and profiled along with feed and water samples. The insect meal diet markedly modulated the salmon intestinal microbiota . Overall, the microbial diversity was lower in the digesta of salmon fed the insect meal diet but higher in the mucosa. A group of bacterial genera, dominated by members of the *Bacillaceae* family, was enriched in salmon fed the insect meal diet, which confirms our previous findings in a seawater feeding trial. We also found that microbiota in the intestine closely resembled that of the feeds but was distinct from the water microbiota. Notably, bacterial genera associated with the diet effects were present in the feeds as well. In conclusion, our results show consistent changes in the intestinal microbiota of Atlantic salmon fed diets containing black soldier fly larvae meal.
+Being part of fish's natural diets, insects have become a realistic, sustainable feed ingredient for aquaculture. While nutritional values of insects have been extensively studied in various fish species, their impact on the fish microbiota remains to be fully explored. In an 8-week freshwater feeding trial, Atlantic salmon (*Salmo salar*) were fed either a commercially relevant reference diet or an insect meal diet wherein black soldier fly (*Hermetia illucens*) larvae meal comprised 60% of total ingredients. Microbiota of digesta and mucosa origin from the proximal and distal intestine were collected and profiled along with feed and water samples. The insect meal diet markedly modulated the salmon intestinal microbiota. Overall, the microbial diversity was lower in the digesta of salmon fed the insect meal diet but higher in the mucosa. A particular group of bacterial genera, dominated by members of the *Bacillaceae* family, was enriched in salmon fed the insect meal diet, which confirms our previous findings in a seawater feeding trial. We also found that microbiota in the intestine closely resembled that of the feeds but was distinct from the water microbiota. Notably, bacterial genera associated with the diet effects were present in the feeds as well. In conclusion, our results show consistent changes in the intestinal microbiota of Atlantic salmon fed diets containing black soldier fly larvae meal. The next challenge is to evaluate the extent to which these alterations are attributable to feed microbiota and dietary nutrients and what these changes mean for fish physiology and health. 
 
 ### Overview
 
@@ -9,6 +10,7 @@ Here's an overview of the file organization in this project.
 root
 ├── code
 │   ├── 00_setup.ipynb
+│   ├── 00_setup.html
 │   ├── 01_dada2_run1.html
 │   ├── 01_dada2_run1.Rmd
 │   ├── 01_dada2_run2.html
@@ -163,14 +165,16 @@ data/intermediate/qiime2/97otu/robust-Aitchison-pca/ \
 data/intermediate/qiime2/97otu/robust-Aitchison-pca-digesta/ \ 
 data/intermediate/qiime2/97otu/robust-Aitchison-pca-mucosa-feed-water/
 ```
-2.Download raw sequence data, silva132 reference database and silva128 SEPP reference phylogeny.
+2.Download raw sequence data, SILVA132 reference database and SILVA128 SEPP reference phylogeny (`code/00_setup.ipynb`).
 ```bash
 # activate qiime2 environment
 source $HOME/miniconda3/bin/activate
 conda activate qiime2-2020.11
 
-# excute jupyter notebook
-jupyter nbconvert --execute --to html code/00_setup.ipynb
+# launch jupyter notebook to run code/00_setup.ipynb interactively
+jupyter notebook
+
+# shutdown jupyter notebook after running the code by pressing Ctrl + c in the terminal
 ```
 3.Sequence denoising by dada2.
 ```bash
@@ -220,7 +224,7 @@ Rscript -e "rmarkdown::render('code/11_multivariable_association.Rmd')"
 
 ### To-do
 
-* Add a driver script to automate all the analysis, e.g., `make ` or `snakemake`.
+* Add a driver script to automate all the analysis, e.g., `make`.
 
 ### Acknowledgements
 
