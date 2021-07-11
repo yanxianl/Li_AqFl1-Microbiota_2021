@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/272967155.svg)](https://zenodo.org/badge/latestdoi/272967155)
+
 ## Consistent changes in the intestinal microbiota of Atlantic salmon fed insect meal diets
 ### doi: https://doi.org/10.1101/2021.07.04.451034
 
