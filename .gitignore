@@ -3,7 +3,8 @@
 .RData
 .here
 
-data/raw/casava-18-paired-end-demultiplexed*/*
+data/raw/casava-18-paired-end-demultiplexed-run*/**
+!data/raw/casava-18-paired-end-demultiplexed-run*/*.txt
 data/reference/*silva*
 data/reference/*.biom
 data/intermediate/maaslin2/digesta/figures/
