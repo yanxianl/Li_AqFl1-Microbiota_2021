@@ -94,7 +94,7 @@ root
   * QIIME2 library: [DEICODE (0.2.3)](https://library.qiime2.org/plugins/deicode/19/) should be installed within the qiime2 conda environment.
   * [grabseqs (0.7.0)](https://github.com/louiejtaylor/grabseqs) should be installed within the qiime2 conda environment.
 * [Pandoc (2.5)](https://pandoc.org/index.html) should be located in your PATH.
-* R (4.0.5) should be located in your PATH.
+* [R](https://www.r-project.org/) (4.0.5) should be located in your PATH.
 * R packages (packageName_version[source]): 
   * afex_0.28-1 [CRAN]
   * ape_5.5 [CRAN]
