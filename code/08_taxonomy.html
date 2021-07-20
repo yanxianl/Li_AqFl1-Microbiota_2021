@@ -11,7 +11,7 @@
 
 <meta name="author" content="Yanxian Li Department of Paraclinical Sciences Faculty of Veterinary Medicine Norwegian University of Life Sciences" />
 
-<meta name="date" content="2021-06-30" />
+<meta name="date" content="2021-07-20" />
 
 <title>Taxonomic analysis</title>
 
@@ -263,7 +263,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Taxonomic analysis</h1>
 <h4 class="author">Yanxian Li<br><small>Department of Paraclinical Sciences<br>Faculty of Veterinary Medicine<br>Norwegian University of Life Sciences</small></h4>
-<h4 class="date"><small>2021-06-30</small></h4>
+<h4 class="date"><small>2021-07-20</small></h4>
 
 </div>
 
@@ -342,8 +342,8 @@ mtd &lt;- data.frame(sample_data(ps), check.names = FALSE)</code></pre>
 
 txnm_assg %&gt;%
   datatable(options = list(columnDefs = list(list(className = &#39;dt-left&#39;, targets = c(0:3)))))</code></pre>
-<div id="htmlwidget-4896580510eb01f0aaf3" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-4896580510eb01f0aaf3">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7"],["Kingdom","Phylum","Class","Order","Family","Genus","Species"],[932,932,921,906,844,745,169],["100 %","100 %","98.8 %","97.2 %","90.6 %","79.9 %","18.1 %"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Rank<\/th>\n      <th>OTUs_classified<\/th>\n      <th>Frac_classified<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-left","targets":[0,1,2,3]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-b8f858cef6315133b2ce" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-b8f858cef6315133b2ce">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7"],["Kingdom","Phylum","Class","Order","Family","Genus","Species"],[932,932,921,906,844,745,169],["100 %","100 %","98.8 %","97.2 %","90.6 %","79.9 %","18.1 %"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Rank<\/th>\n      <th>OTUs_classified<\/th>\n      <th>Frac_classified<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-left","targets":[0,1,2,3]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 <p>We can tell that the majority of OTUs were assigned at the genus level whereas only 18.1 % of OTUs got a species-level annotation.</p>
 </div>
 <div id="taxa-barplot" class="section level1" number="3">
@@ -918,9 +918,6 @@ coreHmp_dt &lt;- map(coreHmp_dt, function(x){
   select(-Genus)
   }
 )
-
-# replace the data
-coreHm &lt;- map2(coreHmp, coreHmp_dt, function(x, y) x$data &lt;- y)
 
 # parse y axis text as R expression
 ylab &lt;- map(coreHmp_dt, ~parse(text = levels(.x$Taxa))) 

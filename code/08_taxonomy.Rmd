@@ -728,9 +728,6 @@ coreHmp_dt <- map(coreHmp_dt, function(x){
   }
 )
 
-# replace the data
-coreHm <- map2(coreHmp, coreHmp_dt, function(x, y) x$data <- y)
-
 # parse y axis text as R expression
 ylab <- map(coreHmp_dt, ~parse(text = levels(.x$Taxa))) 
 
