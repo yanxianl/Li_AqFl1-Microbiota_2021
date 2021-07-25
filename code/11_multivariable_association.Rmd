@@ -254,7 +254,7 @@ Merge maaslin2 outputs, feature table and metadata.
 
 ```{r}
 # extract maaslin2 output
-fit_dgs_results <- filter(fit_dgs$results) %>%
+fit_dgs_results <- fit_dgs$results %>%
   mutate(
     metadata = factor(metadata, levels = fixef),
     # fix taxa names in the maaslin2 outputs
@@ -371,21 +371,21 @@ ggplot(aes(x = Diet, y = Abundance)) +
 
 ```{r, fig.width=11, fig.height=12}
 # filter features showing significant associations with Segment
-sigAss_dgs_cmprt <- sigAss_dgs %>% 
+sigAss_dgs_seg <- sigAss_dgs %>% 
   filter(metadata == "Segment" & Source != "Feed")
 
 # add the number of non-zero observations to the text annotation
-sigAss_dgs_cmprt <- sigAss_dgs_cmprt %>%
+sigAss_dgs_seg <- sigAss_dgs_seg %>%
   group_by(feature, Segment) %>%
   summarize(N = n(), N_notzero = paste0(sum(Abundance != 0), "/", N)) %>%
   mutate(ann_extra = paste0("N.not.zero(", Segment, "): ", N_notzero)) %>%
   group_by(feature) %>%
   summarize(ann_extra = paste(ann_extra, collapse = "\n")) %>%
-  inner_join(sigAss_dgs_cmprt, by = "feature") %>%
+  inner_join(sigAss_dgs_seg, by = "feature") %>%
   mutate(ann_ctg = paste0(ann_ctg, "\n", ann_extra))
 
 # plotting
-ggplot(sigAss_dgs_cmprt, aes(x = Segment, y = Abundance)) +
+ggplot(sigAss_dgs_seg, aes(x = Segment, y = Abundance)) +
   geom_boxplot(width = 0.5, outlier.shape = NA) +
   geom_jitter(aes(color = Diet), position = position_jitter(0.2)) +
   geom_text(
@@ -579,7 +579,7 @@ fit_mcs <- Maaslin2(
 
 ```{r}
 # extract maaslin2 output
-fit_mcs_results <- filter(fit_mcs$results) %>%
+fit_mcs_results <- fit_mcs$results %>%
   mutate(
     metadata = factor(metadata, levels = fixef),
     feature = gsub("\\.", " ", feature))
@@ -681,21 +681,21 @@ ggplot(aes(x = Diet, y = Abundance)) +
 
 ```{r, fig.width=11, fig.height=5}
 # filter features showing significant associations with Segment
-sigAss_mcs_cmprt <- sigAss_mcs %>% 
+sigAss_mcs_seg <- sigAss_mcs %>% 
   filter(metadata == "Segment" & Source != "Feed")
 
 # add the number of non-zero observations to the text annotation
-sigAss_mcs_cmprt <- sigAss_mcs_cmprt %>%
+sigAss_mcs_seg <- sigAss_mcs_seg %>%
   group_by(feature, Segment) %>%
   summarize(N = n(), N_notzero = paste0(sum(Abundance != 0), "/", N)) %>%
   mutate(ann_extra = paste0("N.not.zero(", Segment, "): ", N_notzero)) %>%
   group_by(feature) %>%
   summarize(ann_extra = paste(ann_extra, collapse = "\n")) %>%
-  inner_join(sigAss_mcs_cmprt, by = "feature") %>%
+  inner_join(sigAss_mcs_seg, by = "feature") %>%
   mutate(ann_ctg = paste0(ann_ctg, "\n", ann_extra))
 
 # plotting
-ggplot(sigAss_mcs_cmprt, aes(x = Segment, y = Abundance)) +
+ggplot(sigAss_mcs_seg, aes(x = Segment, y = Abundance)) +
   geom_boxplot(width = 0.5, outlier.shape = NA) +
   geom_jitter(aes(color = Diet), position = position_jitter(0.2)) +
   geom_text(
