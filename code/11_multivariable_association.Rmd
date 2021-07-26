@@ -257,8 +257,7 @@ Merge maaslin2 outputs, feature table and metadata.
 fit_dgs_results <- fit_dgs$results %>%
   mutate(
     metadata = factor(metadata, levels = fixef),
-    # fix taxa names in the maaslin2 outputs
-    # space (" ") in the original taxa names was replaced with dot(".") in the maaslin2 outputs
+    # fix taxa names in the MaAsLin2 outputs: space in taxa names was replaced with dot
     feature = gsub("\\.", " ", feature))
 
 # add feed samples to the feature table
