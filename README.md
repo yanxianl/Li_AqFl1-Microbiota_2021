@@ -95,55 +95,7 @@ root
   * [grabseqs (0.7.0)](https://github.com/louiejtaylor/grabseqs) should be installed within the qiime2 conda environment.
 * [Pandoc (2.5)](https://pandoc.org/index.html) should be located in your PATH.
 * [R](https://www.r-project.org/) (4.0.5) should be located in your PATH.
-* R packages (packageName_version[source]): 
-  * afex_0.28-1 [CRAN]
-  * ape_5.5 [CRAN]
-  * biomformat_1.18.0 [Bioconductor 3.12]
-  * Biostrings_2.58.0 [Bioconductor 3.12]
-  * circlize_0.4.12 [CRAN]
-  * ComplexHeatmap_2.6.0 [Bioconductor 3.12]
-  * cowplot_1.1.1 [CRAN]
-  * dada2_1.18.0 [Bioconductor 3.12]
-  * DECIPHER_2.18.1 [Bioconductor 3.12]
-  * decontam_1.10.0 [Bioconductor 3.12]
-  * DT_0.18 [CRAN]
-  * emmeans_1.6.0 [CRAN]
-  * flextable_0.6.5 [CRAN]
-  * ggh4x_0.1.2.1 [CRAN]
-  * ggpubr_0.4.0 [CRAN]
-  * ggResidpanel_0.3.0 [CRAN]
-  * ggsignif_0.6.1 [CRAN] 
-  * ggstatsplot_0.7.2 [CRAN]
-  * ggtext_0.1.1 [CRAN]
-  * gt_0.2.2 [CRAN]
-  * here_1.0.1 [CRAN]
-  * Hmisc_4.5-0 [CRAN]
-  * knitr_1.33 [CRAN]
-  * Maaslin2_1.4.0 [Bioconductor 3.12]
-  * magick_2.7.1 [CRAN]
-  * MicrobeR_0.3.2 [github::jbisanz/MicrobeR@9f4e593]
-  * microbiome_1.12.0 [Bioconductor 3.12] 
-  * mixOmics_6.14.0 [Bioconductor 3.12]
-  * officer_0.3.18 [CRAN]
-  * patchwork_1.1.1 [CRAN]
-  * PerformanceAnalytics_2.0.4 [CRAN]
-  * phangorn_2.6.3 [Bioconductor 3.12]
-  * philr_1.16.0 [Bioconductor 3.12]
-  * phyloseq_1.34.0 [Bioconductor 3.12] 
-  * plotly_4.9.3 [CRAN]
-  * plyr_1.8.6 [CRAN]
-  * qiime2R_0.99.35 [github::jbisanz/qiime2R@077b08b]
-  * RColorBrewer_1.1-2 [CRAN]
-  * RUVSeq_1.24.0  [Bioconductor 3.12] 
-  * rlang_0.4.11 [CRAN] 
-  * rmarkdown_2.7 [CRAN] 
-  * scales_1.1.1 [CRAN]
-  * speedyseq [github::mikemc/speedyseq@8daed32]
-  * sva_3.38.0 [Bioconductor 3.12]
-  * tidyverse_1.3.1 [CRAN]
-  * usedist_0.4.0 [CRAN]
-  * vegan_2.5-7 [CRAN]
-  * webshot2_0.0.0.9000 [github::rstudio/webshot2@83aad5d]
+* R packages and versions: see session information at the end of each rmarkdown report.
   
 #### Running the analysis
 
@@ -154,18 +106,10 @@ All the code should be run from the project's root directory.
 # clone the github repository
 git clone https://github.com/yanxianl/Li_AqFl1-Microbiota_2021.git
 
-# delete the following folders which produce errors when computing beta-diversity metrics
-rm -rf \ 
-data/intermediate/qiime2/asv/core-metrics-results/ \ 
-data/intermediate/qiime2/asv/robust-Aitchison-pca/ \
-data/intermediate/qiime2/99otu/core-metrics-results/ \ 
-data/intermediate/qiime2/99otu/robust-Aitchison-pca/ \
-data/intermediate/qiime2/97otu/core-metrics-results/ \
-data/intermediate/qiime2/97otu/core-metrics-results-digesta/ \
-data/intermediate/qiime2/97otu/core-metrics-results-mucosa-feed-water/ \
-data/intermediate/qiime2/97otu/robust-Aitchison-pca/ \ 
-data/intermediate/qiime2/97otu/robust-Aitchison-pca-digesta/ \ 
-data/intermediate/qiime2/97otu/robust-Aitchison-pca-mucosa-feed-water/
+# delete the following folders and the associated files 
+rm -rf \
+data/intermediate/qiime2/*/core-metrics-results*/ \
+data/intermediate/qiime2/*/robust-Aitchison-pca*/ 
 ```
 2.Download raw sequence data, SILVA132 reference database and SILVA128 SEPP reference phylogeny (`code/00_setup.ipynb`).
 ```bash
