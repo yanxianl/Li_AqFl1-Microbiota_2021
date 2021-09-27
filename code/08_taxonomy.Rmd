@@ -251,7 +251,7 @@ col <- c("grey", brewer.pal(n = 10, name = "Paired"))
 # digesta samples
 taxa_bar_digesta <- filter(taxa_tab, Source == "Digesta") %>%
   ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat = "identity") +
+  geom_bar(width = 1, stat = "identity") +
   labs(x = "", y = "Relative abundance (%)") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
@@ -268,7 +268,7 @@ taxa_bar_digesta <- filter(taxa_tab, Source == "Digesta") %>%
 # mucosa samples  
 taxa_bar_mucosa <- filter(taxa_tab, Source == "Mucosa") %>%
   ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat = "identity") +
+  geom_bar(width = 1, stat = "identity") +
   labs(x = "", y = "") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
@@ -304,7 +304,7 @@ taxa_bar_feed <- filter(taxa_tab, SampleType == "Feed") %>%
 # water samples
 taxa_bar_water <- filter(taxa_tab, SampleType == "Water") %>%
   ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat = "identity") +
+  geom_bar(width = 1, stat = "identity") +
   labs(x = "", y = "") +
   scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
   scale_fill_manual(values = col) +
@@ -355,7 +355,7 @@ lgnd_ft <- unique(taxa_tab[ , c("Genus", "Phylum")]) %>%
   merge_v(j = "Phylum") %>% # merge cells belong to the same Phylum
   border_remove() %>% # remove borders
   theme_booktabs() %>% # apply table style
-  hline(i = c(1, 2), border = fp_border(width = 2), part = "body") %>% # draw horizontal lines
+  #hline(i = c(1, 2), border = fp_border(width = 2), part = "body") %>% # draw horizontal lines
   hline_top(part = "header", border = fp_border(color = "white")) # remove horizontal line in the table header
 
 # flextable to raster
@@ -370,11 +370,9 @@ lgnd_gg <- ggplot() +
 ### Figure 1
 
 ```{r, fig.width=10, fig.height=6}
-taxa_bar <- plot_grid(
+plot_grid(
   taxa_bar_noLgnd, lgnd_gg, nrow =  1, align = 'h', rel_widths = c(4, 1)
   ) 
-
-taxa_bar
 
 # export plot
 ggsave(here("result/figure/Figure 1.tiff"), width = 10, height = 6,
@@ -455,10 +453,10 @@ ovrl_bar_feed <- ovrl %>%
   filter(Category != "Absent") %>%
   ggplot(aes(x = SampleType, y = n, fill = Category, label = n)) +
   geom_bar(stat = "identity") +
-  geom_text(position = position_stack(vjust = 0.5), color = "white", size = 4) +
+  geom_text(position = position_stack(vjust = 0.5), size = 4) +
   labs(x = "", y = "Number of OTUs") +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05))) + 
-  scale_fill_manual(values = c("#B2DF8A", "grey50", "#33A02C")) +
+  scale_fill_manual(values = c("#66C2A5", "#B3B3B3", "#E5C494")) +
   facet_nested(~ Diet + Site, scales = "free_x", nest_line = TRUE) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
@@ -476,10 +474,10 @@ ovrl_bar_water <- ovrl %>%
          Category != "Absent") %>%
   ggplot(aes(x = SampleType, y = n, fill = Category, label = n)) +
   geom_bar(stat = "identity") +
-  geom_text(position = position_stack(vjust = 0.5), color = "white", size = 4) +
+  geom_text(position = position_stack(vjust = 0.5),  size = 4) + 
   labs(x = "", y = "Number of OTUs") +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05))) + 
-  scale_fill_manual(values = c("#A6CEE3", "grey50", "#1F78B4")) +
+  scale_fill_manual(values = c("#8DA0CB", "#B3B3B3", "#E5C494")) +
   facet_nested(~ Diet + Site, scales = "free_x", nest_line = TRUE) +
   theme_bw() +
   theme(axis.text.x = element_blank(),
@@ -543,7 +541,7 @@ Abundance of shared OTUs between feed and intestinal mucosa.
 
 ```{r}
 bp_shared_feed <- ggplot(shared_feed, aes(x = Segment, y = Abundance)) +
-  geom_boxplot(fill = "grey50", width = 0.5) +
+  geom_boxplot(fill = "#B3B3B3", width = 0.5) +
   geom_point() +
   facet_nested(~ Diet + Segment, scales = "free_x", nest_line = TRUE) +
   labs(x = "", y = "Relative abundance of shared OTUs (%)") +
@@ -561,7 +559,7 @@ Abundance of shared OTUs between water and intestinal mucosa
 ```{r}
 bp_shared_water <- shared_water %>%
   ggplot(aes(x = Segment, y = Abundance)) +
-    geom_boxplot(fill = "grey50", width = 0.5) +
+    geom_boxplot(fill = "#B3B3B3", width = 0.5) +
     geom_point() +
     facet_nested(~ Diet + Segment, scales = "free_x", nest_line = TRUE) +
     labs(x = "", y = "Relative abundance of shared OTUs (%)") +
