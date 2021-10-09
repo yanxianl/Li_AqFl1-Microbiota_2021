@@ -14,75 +14,75 @@ Here's an overview of the file organization in this project.
 ```
 root
 ├── code
-│ ??├── 00_setup.ipynb
-│ ??├── 00_setup.html
-│ ??├── 01_dada2_run1.html
-│ ??├── 01_dada2_run1.Rmd
-│ ??├── 01_dada2_run2.html
-│ ??├── 01_dada2_run2.Rmd
-│ ??├── 02_qiime2_part1.html
-│ ??├── 02_qiime2_part1.ipynb
-│ ??├── 03_filtering.html
-│ ??├── 03_filtering.Rmd
-│ ??├── 04_qiime2_part2.html
-│ ??├── 04_qiime2_part2.ipynb
-│ ??├── 05_batch_correction.html
-│ ??├── 05_batch_correction.Rmd
-│ ??├── 06_qiime2_part3.html
-│ ??├── 06_qiime2_part3.ipynb
-│ ??├── 07_qiime2R.html
-│ ??├── 07_qiime2R.Rmd
-│ ??├── 08_taxonomy.html
-│ ??├── 08_taxonomy.Rmd
-│ ??├── 09_alpha_diversity.html
-│ ??├── 09_alpha_diversity.Rmd
-│ ??├── 10_beta_diversity.html
-│ ??├── 10_beta_diversity.Rmd
-│ ??├── 11_multivariable_association.html
-│ ??├── 11_multivariable_association.Rmd
-│ ??├── functions
-│ ??│ ??├── plot_prevalence.R
-│ ??│ ??├── plot_frequency.R
-│ ??│ ??└── plot_heatmap.R
-│ ??└── README.md
+│   ├── 00_setup.ipynb
+│   ├── 00_setup.html
+│   ├── 01_dada2_run1.html
+│   ├── 01_dada2_run1.Rmd
+│   ├── 01_dada2_run2.html
+│   ├── 01_dada2_run2.Rmd
+│   ├── 02_qiime2_part1.html
+│   ├── 02_qiime2_part1.ipynb
+│   ├── 03_filtering.html
+│   ├── 03_filtering.Rmd
+│   ├── 04_qiime2_part2.html
+│   ├── 04_qiime2_part2.ipynb
+│   ├── 05_batch_correction.html
+│   ├── 05_batch_correction.Rmd
+│   ├── 06_qiime2_part3.html
+│   ├── 06_qiime2_part3.ipynb
+│   ├── 07_qiime2R.html
+│   ├── 07_qiime2R.Rmd
+│   ├── 08_taxonomy.html
+│   ├── 08_taxonomy.Rmd
+│   ├── 09_alpha_diversity.html
+│   ├── 09_alpha_diversity.Rmd
+│   ├── 10_beta_diversity.html
+│   ├── 10_beta_diversity.Rmd
+│   ├── 11_multivariable_association.html
+│   ├── 11_multivariable_association.Rmd
+│   ├── functions
+│   │   ├── plot_prevalence.R
+│   │   ├── plot_frequency.R
+│   │   └── plot_heatmap.R
+│   └── README.md
 ├── data
-│ ??├── raw
-│ ??│ ??├── casava-18-paired-end-demultiplexed-run1
-│ ??│ ??├── casava-18-paired-end-demultiplexed-run2
-│ ??│ ??├── qPCR
-│ ??│ ??└── README.md
-│ ??├── reference
-│ ?????  ├── mock_description.pdf
-│ ?????  ├── mock-expected.biom
-│ ?????  ├── mock-expected.qza
-│ ?????  ├── mock_expected.tsv
-│ ?????  ├── sepp-refs-silva-128.qza
-│ ?????  ├── silva_132_99_16S.fna
-│ ?????  ├── silva_132_consensus_taxonomy_l7.txt
-│ ?????  └── README.md
-│ ??├── intermediate
-│ ??│ ??├── dada2
-│ ??│ ??├── filtering
-│ ??│ ??├── maaslin2
-│ ??│ ??├── permanova
-│ ??│ ??├── qiime2
-│ ??│ ??├── qiime2R
-│ ??│ ??└── qPCR
-│ ??└── metadata.tsv
+│   ├── raw
+│   │   ├── casava-18-paired-end-demultiplexed-run1
+│   │   ├── casava-18-paired-end-demultiplexed-run2
+│   │   ├── qPCR
+│   │   └── README.md
+│   ├── reference
+│   │   ├── mock_description.pdf
+│   │   ├── mock-expected.biom
+│   │   ├── mock-expected.qza
+│   │   ├── mock_expected.tsv
+│   │   ├── sepp-refs-silva-128.qza
+│   │   ├── silva_132_99_16S.fna
+│   │   ├── silva_132_consensus_taxonomy_l7.txt
+│   │   └── README.md
+│   ├── intermediate
+│   │   ├── dada2
+│   │   ├── filtering
+│   │   ├── maaslin2
+│   │   ├── permanova
+│   │   ├── qiime2
+│   │   ├── qiime2R
+│   │   └── qPCR
+│   └── metadata.tsv
 ├── result
-???  ├── figure
-???  │ ??├── Figure 1.tiff
-???  │ ??├── Figure 2.tiff
-???  │ ??├── Figure 3.tiff
-???  │ ??├── Figure 4.tiff
-???  │ ??├── Figure 5.tiff
-???  │ ??├── Figure 6.tiff
-???  │ ??├── Figure 7.tiff
-???  │ ??├── Figure S1.tiff
-???  │ ??├── Figure S2.tiff
-???  │ ??└── Figure S3.tiff
-???  └── table
-???      └── Table S1.csv
+│   ├── figure
+│   │   ├── Figure 1.tiff
+│   │   ├── Figure 2.tiff
+│   │   ├── Figure 3.tiff
+│   │   ├── Figure 4.tiff
+│   │   ├── Figure 5.tiff
+│   │   ├── Figure 6.tiff
+│   │   ├── Figure 7.tiff
+│   │   ├── Figure S1.tiff
+│   │   ├── Figure S2.tiff
+│   │   └── Figure S3.tiff
+│   └── table
+│       └── Table S1.csv
 ├── Li_AqFl1-Microbiota_2021.Rproj
 ├── LICENSE.md
 └── README.md
