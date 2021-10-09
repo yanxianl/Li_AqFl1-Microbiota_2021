@@ -24,11 +24,11 @@ RUN R -e "BiocManager::install('biomformat')"\
 && R -e "BiocManager::install('mixOmics')"\
 && R -e "BiocManager::install('RUVSeq')"\
 && R -e "BiocManager::install('phangorn')"\
-&& R -e "BiocManager::install('phyloseq')"\
-&& R -e "BiocManager::install('philr')"
+&& R -e "BiocManager::install('phyloseq')"
 
 # install packages from GitHub
-RUN R -e "devtools::install_github('jbisanz/MicrobeR@9f4e593',upgrade='never')"\
+RUN R -e "devtools::install_github('jsilve24/philr@6d6842a',upgrade='never')"\
+&& R -e "devtools::install_github('jbisanz/MicrobeR@9f4e593',upgrade='never')"\
 && R -e "devtools::install_github('jbisanz/qiime2R@077b08b',upgrade='never')"\
 && R -e "devtools::install_github('mikemc/speedyseq@8daed32',upgrade='never')"\
 && R -e "devtools::install_github('teunbrand/ggh4x@v0.1.2',upgrade='never')"\
