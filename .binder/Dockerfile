@@ -9,7 +9,7 @@ RUN apt-get update -y\
 && apt-get install -y dpkg-dev zlib1g-dev libssl-dev libffi-dev libmpfr-dev\
 && apt-get install -y curl libcurl4-openssl-dev\
 && apt-get install -y git\
-&& apt-get install -y chromium
+&& apt-get install -y chromium-browser
 
 # install R packages from CRAN
 RUN R -e "install.packages(c('BiocManager','devtools'))"
