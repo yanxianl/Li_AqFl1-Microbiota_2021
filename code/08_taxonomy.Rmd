@@ -67,7 +67,7 @@ taxa_names(ps) <- paste0("OTU", indx)
 
 # extract otu table, taxonomy and metadata
 otu <- as.data.frame(otu_table(ps)) 
-txnm <- tax_table(ps) %>% as("matrix") %>% as.data.frame()
+txnm <- tax_table(ps) %>% as("matrix") %>% as_tibble(rownames = NA)
 mtd <- data.frame(sample_data(ps), check.names = FALSE)
 ```
 
@@ -694,8 +694,8 @@ coreHmp <- map2(coreHmp, xlab, function(x, y) x + scale_x_discrete(labels = y))
 ```{r}
 # add the taxonomy of core taxa
 coreHmp_dt <- map(coreHmp_dt, function(x){
-  txnm[levels(x$Taxa), ] %>%
-  rownames_to_column("Taxa") %>%
+  rownames_to_column(txnm, "Taxa") %>%
+  filter(Taxa %in% levels(x$Taxa)) %>%
   inner_join(x, by = "Taxa") %>%
   # get the best taxonomic annotations for core taxa
   mutate(
