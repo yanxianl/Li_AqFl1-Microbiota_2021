@@ -18,12 +18,12 @@ RUN R -e "install.packages(c('BiocManager','devtools'))"
 RUN R -e "BiocManager::install('Biostrings')"\
 && R -e "BiocManager::install('DECIPHER')"\
 && R -e "BiocManager::install('phangorn')"\
-&& R -e "BiocManager::install('phyloseq')"\
-&& R -e "BiocManager::install('philr')"
+&& R -e "BiocManager::install('phyloseq')"
 
 # install packages from GitHub
-RUN R -e "devtools::install_github('jbisanz/MicrobeR@9f4e593',upgrade='never')"\
-&& R -e "devtools::install_github('jbisanz/qiime2R@077b08b',upgrade='never')"\
-&& R -e "devtools::install_github('mikemc/speedyseq@8daed32',upgrade='never')"
+RUN R -e "devtools::install_github('jsilve24/philr@6d6842a',dependencies=TRUE,upgrade='never')"\
+&& R -e "devtools::install_github('jbisanz/MicrobeR@9f4e593',dependencies=TRUE,upgrade='never')"\
+&& R -e "devtools::install_github('jbisanz/qiime2R@077b08b',dependencies=TRUE,upgrade='never')"\
+&& R -e "devtools::install_github('mikemc/speedyseq@8daed32',dependencies=TRUE,upgrade='never')"
 
 USER ${NB_USER}
