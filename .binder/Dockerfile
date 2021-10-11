@@ -14,6 +14,18 @@ RUN apt-get update -y\
 # install R packages from CRAN
 RUN R -e "install.packages(c('devtools','BiocManager'))"
 
+# install bioconductor packages
+RUN R -e "BiocManager::install('biomformat')"\
+&& R -e "BiocManager::install('Biostrings')"\
+&& R -e "BiocManager::install('ComplexHeatmap')"\
+&& R -e "BiocManager::install('DECIPHER')"\
+&& R -e "BiocManager::install('dada2')"\
+&& R -e "BiocManager::install('decontam')"\
+&& R -e "BiocManager::install('mixOmics')"\
+&& R -e "BiocManager::install('RUVSeq')"\
+&& R -e "BiocManager::install('phangorn')"\
+&& R -e "BiocManager::install('phyloseq')"
+
 # install packages from GitHub
 RUN R -e "devtools::install_github('mikemc/speedyseq@8daed32',upgrade='never')"\
 && R -e "devtools::install_github('microbiome/microbiome@44e86d2',upgrade='never')"\
@@ -29,18 +41,6 @@ RUN R -e "devtools::install_github('mikemc/speedyseq@8daed32',upgrade='never')"\
 && R -e "devtools::install_github('rstudio/websocket@v1.4.0',upgrade='never')"\
 && R -e "devtools::install_github('rstudio/chromote@2245a54',upgrade='never')"\
 && R -e "devtools::install_github('rstudio/webshot2@83aad5d',upgrade='never')"
-
-# install bioconductor packages
-RUN R -e "BiocManager::install('biomformat')"\
-&& R -e "BiocManager::install('Biostrings')"\
-&& R -e "BiocManager::install('ComplexHeatmap')"\
-&& R -e "BiocManager::install('DECIPHER')"\
-&& R -e "BiocManager::install('dada2')"\
-&& R -e "BiocManager::install('decontam')"\
-&& R -e "BiocManager::install('mixOmics')"\
-&& R -e "BiocManager::install('RUVSeq')"\
-&& R -e "BiocManager::install('phangorn')"\
-&& R -e "BiocManager::install('phyloseq')"
 
 USER ${NB_USER}
 
