@@ -17,7 +17,6 @@ RUN R -e "install.packages(c('BiocManager','devtools'))"
 # install bioconductor packages
 RUN R -e "BiocManager::install('biomformat')"\
 && R -e "BiocManager::install('Biostrings')"\
-&& R -e "BiocManager::install('ComplexHeatmap')"\
 && R -e "BiocManager::install('dada2')"\
 && R -e "BiocManager::install('DECIPHER')"\
 && R -e "BiocManager::install('decontam')"\
@@ -28,6 +27,7 @@ RUN R -e "BiocManager::install('biomformat')"\
 
 # install packages from GitHub
 RUN R -e "devtools::install_github('teunbrand/ggh4x@v0.1.2',dependencies=TRUE,upgrade='never')"\
+&& R -e "devtools::install_github('jokergoo/ComplexHeatmap@0383bad',dependencies=TRUE,upgrade='never')"\
 && R -e "devtools::install_github('jsilve24/philr@6d6842a',dependencies=TRUE,upgrade='never')"\
 && R -e "devtools::install_github('jbisanz/MicrobeR@9f4e593',dependencies=TRUE,upgrade='never')"\
 && R -e "devtools::install_github('jbisanz/qiime2R@077b08b',dependencies=TRUE,upgrade='never')"\
