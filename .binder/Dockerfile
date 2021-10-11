@@ -1,4 +1,4 @@
-FROM rocker/binder:4.0.5
+FROM rocker/binder:3.6.3
 LABEL maintainer='Yanxian Li'
 USER root
 COPY . ${HOME}
@@ -9,7 +9,7 @@ RUN apt-get update -y\
 && apt-get install -y dpkg-dev zlib1g-dev libssl-dev libffi-dev libmpfr-dev\
 && apt-get install -y curl libcurl4-openssl-dev\
 && apt-get install -y git\
-&& apt-get install -y chromium-browser
+&& apt-get install -y chromium
 
 # install R packages from CRAN
 RUN R -e "install.packages(c('BiocManager','devtools'))"
@@ -18,23 +18,23 @@ RUN R -e "install.packages(c('BiocManager','devtools'))"
 RUN R -e "BiocManager::install('biomformat')"\
 && R -e "BiocManager::install('Biostrings')"\
 && R -e "BiocManager::install('ComplexHeatmap')"\
-&& R -e "BiocManager::install('dada2')"\
 && R -e "BiocManager::install('DECIPHER')"\
 && R -e "BiocManager::install('decontam')"\
 && R -e "BiocManager::install('mixOmics')"\
-&& R -e "BiocManager::install('sva')"\
 && R -e "BiocManager::install('RUVSeq')"\
 && R -e "BiocManager::install('phangorn')"\
-&& R -e "BiocManager::install('phyloseq')"\
-&& R -e "BiocManager::install('philr')"\
-&& R -e "BiocManager::install('microbiome')"\
-&& R -e "BiocManager::install('Maaslin2')"
+&& R -e "BiocManager::install('phyloseq')"
 
 # install packages from GitHub
-RUN R -e "devtools::install_github('teunbrand/ggh4x@v0.1.2',upgrade='never')"\
-&& R -e "devtools::install_github('jbisanz/qiime2R@077b08b',upgrade='never')"\
-&& R -e "devtools::install_github('jbisanz/MicrobeR@9f4e593',upgrade='never')"\
+RUN R -e "devtools::install_github('benjjneb/dada2@v1.18',upgrade='never')"\
 && R -e "devtools::install_github('mikemc/speedyseq@8daed32',upgrade='never')"\
+&& R -e "devtools::install_github('microbiome/microbiome@44e86d2',upgrade='never')"\
+&& R -e "devtools::install_github('jtleek/sva-devel@3f50493',upgrade='never')"\
+&& R -e "devtools::install_github('jsilve24/philr@6d6842a',upgrade='never')"\
+&& R -e "devtools::install_github('jbisanz/MicrobeR@9f4e593',upgrade='never')"\
+&& R -e "devtools::install_github('jbisanz/qiime2R@077b08b',upgrade='never')"\
+&& R -e "devtools::install_github('biobakery/Maaslin2@1.4.0',upgrade='never')"\
+&& R -e "devtools::install_github('teunbrand/ggh4x@v0.1.2',upgrade='never')"\
 && R -e "devtools::install_github('r-lib/later@v1.2.0',upgrade='never')"\
 && R -e "devtools::install_github('r-lib/cpp11',upgrade='never')"\
 && R -e "devtools::install_github('rstudio/promises@v1.1.1',upgrade='never')"\
