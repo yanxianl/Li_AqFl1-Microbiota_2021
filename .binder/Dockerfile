@@ -15,8 +15,7 @@ RUN apt-get update -y\
 RUN R -e "install.packages(c('devtools','BiocManager'))"
 
 # install packages from GitHub
-RUN R -e "devtools::install_github('benjjneb/dada2@v1.16',upgrade='never')"\
-&& R -e "devtools::install_github('mikemc/speedyseq@8daed32',upgrade='never')"\
+RUN R -e "devtools::install_github('mikemc/speedyseq@8daed32',upgrade='never')"\
 && R -e "devtools::install_github('microbiome/microbiome@44e86d2',upgrade='never')"\
 && R -e "devtools::install_github('jtleek/sva-devel@3f50493',upgrade='never')"\
 && R -e "devtools::install_github('jsilve24/philr@6d6842a',upgrade='never')"\
@@ -36,6 +35,7 @@ RUN R -e "BiocManager::install('biomformat')"\
 && R -e "BiocManager::install('Biostrings')"\
 && R -e "BiocManager::install('ComplexHeatmap')"\
 && R -e "BiocManager::install('DECIPHER')"\
+&& R -e "BiocManager::install('dada2')"\
 && R -e "BiocManager::install('decontam')"\
 && R -e "BiocManager::install('mixOmics')"\
 && R -e "BiocManager::install('RUVSeq')"\
