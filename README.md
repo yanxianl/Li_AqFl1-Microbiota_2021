@@ -88,6 +88,23 @@ root
 └── README.md
 ```
 
+### How to regenerate the figures and tables
+Computationally lightweight RMarkdown files can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README file. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed. The instance has limited computational resources. Tasks requiring intensive computation, i.e., sequence denoising by DADA2, should not be run. Due to technical challenges, the RStudio instance was built on R 3.6.3 rather than R 4.0.5. Because of that, some R package versions were different from what we used for the actual data analysis but the results are identical. 
+
+To reproduce the figures and tables published in the paper, run the following RMarkdown files:
+
+* 03_filtering.Rmd
+  * Table S1
+* 08_taxonomy.Rmd  
+  * Figure 1-3, Figure S1
+* 09_alpha_diversity.Rmd
+  * Figure 4, Figure S2
+* 10_beta_diversity.Rmd
+  * Figure 5, Figure S3
+  * Table 1
+* 11_multivariable_association.Rmd
+  * Figure 6-7
+  
 ### How to regenerate this repository
 
 #### Dependencies and locations
