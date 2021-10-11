@@ -194,4 +194,5 @@ Rscript -e "rmarkdown::render('code/11_multivariable_association.Rmd')"
 
 ### Acknowledgements
 
-The project organization was inspired by the Riffomonas project, maintained by Dr. Pat Schloss. Visit the [*Riffomonas*](http://www.riffomonas.org/) website to check out tutorials on reproducible data analysis for microbiome research.
+The R package [holepunch](https://karthik.github.io/holepunch/) was used to make the RMarkdown files [binder](https://mybinder.org/)-ready. 
+The project organization was inspired by the Riffomonas project. Visit the [*Riffomonas*](http://www.riffomonas.org/) website to check out tutorials on reproducible data analysis for microbiome research.
