@@ -89,7 +89,7 @@ root
 ```
 
 ### How to regenerate the figures and tables
-Computationally lightweight RMarkdown files can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README file. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed. The instance has limited computational resources. Tasks requiring intensive computation, i.e., sequence denoising by DADA2, should not be run. Due to technical challenges, the RStudio instance was built on R 3.6.3 rather than R 4.0.5. Because of that, some R package versions were different from what we used for the actual data analysis but the results are identical. 
+Computationally lightweight RMarkdown files can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README file. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed. The instance has limited computational resources. Tasks requiring intensive computation, i.e., sequence denoising by DADA2, should not be run. Due to technical challenges, the instance was built on R 3.6.3 rather than R 4.0.5. Because of that, some R package versions are different from what we used for the actual data analysis but the results are identical. Note that multi-core parallel computing is not available for the RStudio stance we use here. Turn off the parallel computing when you run MaAsLin2.
 
 To reproduce the figures and tables published in the paper, run the following RMarkdown files:
 
@@ -102,7 +102,7 @@ To reproduce the figures and tables published in the paper, run the following RM
 * 10_beta_diversity.Rmd
   * Figure 5, Figure S3
   * Table 1
-* 11_multivariable_association.Rmd
+* 11_multivariable_association.Rmd (trun off parallel computing when running MaAsLin2)
   * Figure 6-7
   
 ### How to regenerate this repository
