@@ -14,7 +14,7 @@ RUN apt-get update -y\
 RUN R -e "install.packages(c('devtools'))"
 
 # install packages from GitHub
-RUN R -e "devtools::install_github('jokergoo/ComplexHeatmap@9c277dd',dependencies=TRUE,upgrade='never')"\
+RUN R -e "devtools::install_github('jokergoo/ComplexHeatmap@9c277dd',dependencies=TRUE,upgrade='never')"
 
 USER ${NB_USER}
 
