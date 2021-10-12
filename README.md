@@ -110,7 +110,7 @@ To reproduce the figures and tables published in the paper, run the following RM
 #### Dependencies and locations
 
 * [Miniconda3](https://docs.conda.io/en/latest/miniconda.html) should be located in your HOME directory.
-* [QIIME2 (2020.11)](https://docs.qiime2.org/2020.11/) should be installed within a Miniconda3 environment named as `qiime2-2020.11`.
+* [QIIME2 (2020.11)](https://docs.qiime2.org/2020.11/) should be installed within a conda environment named as `qiime2-2020.11`.
   * QIIME2 library: [DEICODE (0.2.3)](https://library.qiime2.org/plugins/deicode/19/) should be installed within the qiime2 conda environment.
   * [grabseqs (0.7.0)](https://github.com/louiejtaylor/grabseqs) should be installed within the qiime2 conda environment.
 * [Pandoc (2.5)](https://pandoc.org/index.html) should be located in your PATH.
