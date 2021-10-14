@@ -83,6 +83,8 @@ root
 │   │   └── Figure S3.tiff
 │   └── table
 │       └── Table S1.csv
+├── DESCRIPTION
+├── Dockerfile
 ├── Li_AqFl1-Microbiota_2021.Rproj
 ├── LICENSE.md
 └── README.md
