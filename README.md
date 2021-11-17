@@ -124,8 +124,11 @@ All the code should be run from the project's root directory.
 
 1.Download or clone this github repository to your local computer.
 ```bash
-# clone the github repository
+# clone the github repository 
 git clone https://github.com/yanxianl/Li_AqFl1-Microbiota_2021.git
+
+# enter the project root directory
+cd Li_AqFl1-Microbiota_2021
 
 # delete the following folders and the associated files 
 rm -rf \
@@ -134,9 +137,6 @@ data/intermediate/qiime2/*/robust-Aitchison-pca*/
 ```
 2.Download raw sequence data, SILVA132 reference database and SILVA128 SEPP reference phylogeny (`code/00_setup.ipynb`).
 ```bash
-# enter the project root directory
-cd Li_AqFl1-Microbiota_2021
-
 # activate qiime2 environment and launch jupyter notebook to run code/00_setup.ipynb interactively
 conda activate qiime2-2020.11
 jupyter notebook
