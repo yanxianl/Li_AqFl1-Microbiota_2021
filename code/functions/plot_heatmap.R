@@ -236,9 +236,10 @@ plot_heatmap <- function(
     heatmap_legend_param = list(
       legend_height = unit(4, "cm"),
       title_position = legend_title_position,
-      legend_direction = legend_direction),
+      legend_direction = legend_direction
+      ),
     cell_fun = function(j, i, x, y, width, height, fill) {
-      grid.text(mark[i, j], x, y, gp = gpar(fontsize = 10, col = "black"))
+      grid.text(mark[i, j], x, y, gp = gpar(col = "white", fontsize = 12, fontface = "bold"))
       }
   ) 
   return(p)
