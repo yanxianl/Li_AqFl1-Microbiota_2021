@@ -77,7 +77,6 @@ root
 │   │   ├── Figure 4.tiff
 │   │   ├── Figure 5.tiff
 │   │   ├── Figure 6.tiff
-│   │   ├── Figure 7.tiff
 │   │   ├── Figure S1.tiff
 │   │   ├── Figure S2.tiff
 │   │   └── Figure S3.tiff
