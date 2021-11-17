@@ -23,42 +23,39 @@ options(width = 120)
 opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = FALSE)
 ```
 
-`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "left",  buttonSide = "left")`
+`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "right",  buttonSide = "right")`
 
 # Getting ready
 
-Load packages
+Load packages.
 
 ```{r}
-library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
-library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
-library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
-library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN v1.1.1  
-library(ggtext) # Improved Text Rendering Support for 'ggplot2', CRAN v0.1.1
-library(ggsignif) # Significance Brackets for 'ggplot2', CRAN v0.6.0
-library(RColorBrewer) # ColorBrewer Palettes, CRAN v1.1-2 
-library(afex) # Analysis of Factorial Experiments, CRAN v0.28-1 
-library(ggResidpanel) # Panels and Interactive Versions of Diagnostic Plots, CRAN v0.3.0 
-library(emmeans) # Estimated Marginal Means, aka Least-Squares Means, CRAN v1.5.3 
+library(here) # A Simpler Way to Find Your Files, CRAN 
+library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN 
+library(ggtext) # Improved Text Rendering Support for 'ggplot2', CRAN
+library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN
+library(ggsignif) # Significance Brackets for 'ggplot2', CRAN 
+library(afex) # Analysis of Factorial Experiments, CRAN 
+library(ggResidpanel) # Panels and Interactive Versions of Diagnostic Plots, CRAN 
+library(emmeans) # Estimated Marginal Means, aka Least-Squares Means, CRAN 
 
 # Set seed
 set.seed(1910)
 ```
 
-Load data
+Load data.
 
 ```{r}
 # metadata
-ps <- readRDS(here("data/intermediate/qiime2R/phyloseq.rds"))
-mtd <- data.frame(sample_data(ps), check.names = FALSE) %>%
-  rownames_to_column("SampleID") %>%
+mtd <- read_tsv(here("data/metadata.tsv"), comment = "#q2") %>%
+  rename(SampleID = "#SampleID") %>%
   select(!contains("qPCR"))
 
 # alpha diversity
 alph <- readRDS(here("data/intermediate/qiime2R/alpha_diversity.rds"))
 ```
 
-Tidy data
+Tidy data.
 
 ```{r}
 alph <- map_dfc(alph, ~.x$data) %>% # merge alpha diversity indices
@@ -67,25 +64,24 @@ alph <- map_dfc(alph, ~.x$data) %>% # merge alpha diversity indices
   # remove technical replicates
   filter(!(IsTechnicalReplicate == "yes" & PCRBatch == 2)) %>%
   rename(
-    "Observed OTUs" = observed_features, 
+    "Observed ASVs" = observed_features, 
     "Pielou's evenness" = pielou_evenness, 
     "Shannon's index" = shannon_entropy, 
-    "Faith's PD" = faith_pd) %>%
+    "Faith's PD" = faith_pd
+    ) %>%
   pivot_longer(
     cols = "Pielou's evenness":"Shannon's index", 
     names_to = "alph_indx", 
-    values_to = "value") %>%
+    values_to = "value"
+    ) %>%
   mutate(
     FishID = as.character(FishID), 
-    Source = factor(
-      Source, 
-      levels = c("Digesta", "Mucosa", "Feed", "Water")
-      ),
+    Diet = factor(Diet, levels = c("REF", "IM")),
+    Segment = factor(Segment, levels = c("PI", "DI")),
+    Source = factor(Source, levels = c("Digesta", "Mucosa", "Feed", "Water")),
     alph_indx = factor(
       alph_indx, 
-      levels = c(
-        "Observed OTUs", "Pielou's evenness", "Shannon's index", "Faith's PD"
-        )
+      levels = c("Observed ASVs", "Pielou's evenness", "Shannon's index", "Faith's PD")
       )
     )
 ```
@@ -94,33 +90,28 @@ alph <- map_dfc(alph, ~.x$data) %>% # merge alpha diversity indices
 
 ```{r, fig.width=6, fig.height=7}
 ggplot(alph, aes(x = Diet, y = value)) +
-  geom_point(
-    aes(group = Segment), 
-    alpha = 0.3, 
-    position = position_dodge(0.5)) +
+  geom_point(aes(group = Segment), alpha = 0.3, position = position_dodge(0.5)) +
   stat_summary(
-    data = filter(alph, !SampleType %in% c("Feed", "Water")),
+    data = filter(alph, !Source %in% c("Feed", "Water")),
     aes(color = Segment, group = Segment), 
     fun.data = "mean_sdl", 
     fun.args = list(mult = 1), 
     geom = "pointrange",  
     size = 0.5,
-    position = position_dodge(0.5)) +
+    position = position_dodge(0.5)
+    ) +
   geom_line(
-    data = filter(alph, !SampleType %in% c("Feed", "Water")) %>%
+    data = filter(alph, !Source %in% c("Feed", "Water")) %>%
       group_by(alph_indx, Diet, Source, Segment) %>% 
-      summarise(m = mean(value)),
-    aes(y = m, color = Segment, group = Segment, linetype = Segment), 
+      summarise(mean = mean(value)),
+    aes(y = mean, color = Segment, group = Segment, linetype = Segment), 
     size = 0.5, 
-    position = position_dodge(0.5)) + 
+    position = position_dodge(0.5)
+    ) + 
   facet_grid(alph_indx ~ Source, scales = "free_y") +
   scale_color_brewer(palette = "Dark2") +
-  labs(color = "Segment", linetype = "Segment") +
   theme_bw(base_size = 12) +
-  theme(
-    legend.position = "top",
-    strip.text.y = element_text(angle = 0)
-    )
+  theme(legend.position = "top", strip.text.y = element_text(angle = 0))
 ```
 
 # Compare alpha diversity
@@ -142,49 +133,15 @@ alph_dgs_spl <- split(alph_dgs, alph_dgs$alph_indx)
 # fit model
 lme_dgs <- lapply(alph_dgs_spl, function(x) {
   mixed(
-    log1p(value) ~ Diet * Segment + (1|FishID) + (1|Tank), 
+    value ~ Diet * Segment + (1|FishID) + (1|Tank), 
     data = x, 
     method = "KR"
     )
   }
 )
+
+lme_dgs
 ```
-
-One of the fitted models is singular. Let's look at the estimated random effects.
-
-```{r}
-lapply(lme_dgs, function(x) summary(x)$varcor) 
-```
-
-The standard deviation of the random effect `FishID` is zero for Shannon's index. We update the model by removing the term `1|FishID`.
-
-```{r, message=TRUE}
-lme_dgs1 <- lapply(lme_dgs, function(x){
-  if(isSingular(x$full_model) == TRUE) { # remove random effect "FishID" if the model is singular
-    mixed(
-      log1p(value) ~ Diet * Segment + (1|Tank), data = x$data, method = "KR"
-      )
-  } else {
-    x
-  }
- }
-)
-
-lme_dgs1
-```
-
-The updated model is no longer singular. Robust results should hold in both maximal and reduced model. Let's compare the pattern of significant and non-significant effects before and after removing the random effect `FishID`.
-
-```{r}
-left_join(
-  nice(lme_dgs[["Shannon's index"]]), 
-  nice(lme_dgs1[["Shannon's index"]]), 
-  by = "Effect", 
-  suffix = c("_max", "_reduced")
-  )
-```
-
-The pattern of significant and non-significant effect is the same for both models. We proceed to model diagnostics.
 
 ### Model diagnostics
 
@@ -192,14 +149,14 @@ Here we use the *ggResidpanel* package to produce a panel of plots for residual 
 
 ```{r, results='hide'}
 lapply(
-  seq_along(lme_dgs1), 
+  seq_along(lme_dgs), 
   function(x) 
   {
   # extract titles 
-  main <- ggdraw() + draw_label(names(lme_dgs1)[x], fontface='bold')
+  main <- ggdraw() + draw_label(names(lme_dgs)[x], fontface='bold')
   
   # make residual diagnostic plots
-  resid_panel <- resid_panel(lme_dgs1[[x]]$full_model, plots = "all", qqbands = TRUE)
+  resid_panel <- resid_panel(lme_dgs[[x]]$full_model, plots = "all", qqbands = TRUE)
   
   # assemble plots
   plot_grid(main, resid_panel, ncol = 1, rel_heights = c(1, 10))
@@ -207,7 +164,7 @@ lapply(
 )
 ```
 
-Everything looks fine. We proceed to post-hoc tests.
+Everything looks OK. We proceed to post-hoc tests.
 
 ### Post-hoc tests
 
@@ -215,7 +172,7 @@ When the interaction between main factors is significant, marginal means average
 
 ```{r}
 # filter alpha-diversity indices showing significant interactions between the main effects
-intr_dgs <- lapply(lme_dgs1, function(x) {
+intr_dgs <- lapply(lme_dgs, function(x) {
   ifelse(x$anova_table["Diet:Segment", "Pr(>F)"] < 0.05, TRUE, FALSE)
   }
 )
@@ -232,7 +189,7 @@ cc_dgs <- mapply(function(x, y){
     summary()
   }
 },
-  x = lme_dgs1, 
+  x = lme_dgs, 
   y = intr_dgs
 )
 
@@ -245,11 +202,11 @@ cc_dgs
 
 ```{r, message=TRUE}
 # filter data
-alph_mcs <- filter(alph,  Source == "Mucosa") %>%
+ alph_mcs <- filter(alph,  Source == "Mucosa") %>%
   droplevels()
 
 # split data
-alph_mcs_spl <- split(alph_mcs, alph_mcs$alph_indx)
+ alph_mcs_spl <- split(alph_mcs,  alph_mcs$alph_indx)
 
 # fit model
 lme_mcs <- lapply(alph_mcs_spl, function(x) {
@@ -281,14 +238,15 @@ lme_mcs1 <- lapply(alph_mcs_spl, function(x) {
 lme_mcs1
 ```
 
-The updated models are no longer singular. Let's compare the pattern of significant and non-significant effects before and after removing the random effect `FishID`.
+The updated models are no longer singular. Robust results should hold in both maximal and reduced model. Let's compare the pattern of significant and non-significant effects before and after removing the random effect `FishID`.
 
 ```{r}
 map2_dfr(
   lme_mcs, 
   lme_mcs1, 
   ~left_join(nice(.x), nice(.y), by = "Effect", suffix = c("_max", "_reduced")),
-  .id = "alpha_diversity")
+  .id = "alpha_diversity"
+  )
 ```
 
 The pattern of significant and non-significant effect is the same for both models. We proceed to model diagnostics.
@@ -312,7 +270,7 @@ lapply(
 )
 ```
 
-The residual plots of Shannon's index look OKish. Everything else is fine. We proceed to post-hoc tests.
+Everything looks OK. We proceed to post-hoc tests.
 
 ### Post-hoc tests
 
@@ -333,7 +291,7 @@ cc_mcs <- mapply(function(x, y){
   # Make conditional contrasts if the interaction is significant
   if (y == TRUE){
     contrast(
-      emm, method = "consec", simple = "each", combine = TRUE, adjust = "mvt"
+      emm, method = "consec", simple = "each", combine = TRUE, adjust = "holm"
       ) %>%
     summary()
   }
@@ -372,12 +330,9 @@ t_test <- alph_tm %>%
   group_by(alph_indx, SampleType) %>%
   nest() %>%
   mutate(
-    t_test = map(
-      data, 
-      ~t.test(
-        .x$Water, .x$value, paired = TRUE, alternative = "two.sided")
-      ),
-    p_raw = map_dbl(t_test, ~pluck(.x, "p.value"))) %>%
+    t_test = map(data, ~t.test(.x$Water, .x$value, paired = TRUE, alternative = "two.sided")),
+    p_raw = map_dbl(t_test, ~pluck(.x, "p.value"))
+    ) %>%
   group_by(alph_indx) %>%
   nest() %>%
   mutate(p_adj = map(data, ~p.adjust(.x$p_raw, method = "holm"))) %>%
@@ -394,7 +349,7 @@ t_test
 
 # Figures
 
-## Figure 4
+## Figure 3
 
 Gather *p*-values of main effects and their interaction.
 
@@ -423,8 +378,9 @@ p_main <- bind_rows(p_main_dgs, p_main_mcs) %>%
       paste0("Segment: *p* = ", Segment), 
       "<br>",
       paste0("Interaction: *p* = ", `Diet:Segment`)
-     ),
-    lab_main = gsub("= 0.000", "< 0.001", lab_main))
+      ),
+    lab_main = gsub("= 0.000", "< 0.001", lab_main)
+    )
 ```
 
 Gather *p*-values of post-hoc tests.
@@ -446,9 +402,10 @@ p_cc <- bind_rows(p_cc_dgs, p_cc_mcs) %>%
   select(alph_indx, Source, Diet, Segment, start, end, p.value) %>%
   rename(p = p.value) %>%
   arrange(
-    match(alph_indx, c("Observed OTUs", "Pielou's evenness", "Shannon's index", "Faith's PD")),
+    match(alph_indx, c("Observed ASVs", "Pielou's evenness", "Shannon's index", "Faith's PD")),
     match(start, c("PI", "DI", ".")),
-    match(end, c("REF", "IM", "."))) %>%
+    match(end, c("REF", "IM", "."))
+    ) %>%
   mutate(
     # convert p values to corresponding asterisks
     p = ifelse(p < 0.001, "***", p),
@@ -460,74 +417,83 @@ p_cc <- bind_rows(p_cc_dgs, p_cc_mcs) %>%
       Diet == "REF" & Segment == "." ~ 0.8,
       Diet == "IM" & Segment == "." ~ 1.8,
       Diet == "." & Segment == "PI" ~ 0.8,
-      TRUE ~ 1.2),
+      TRUE ~ 1.2
+      ),
     end = case_when(
       Diet == "REF" & Segment == "." ~ 1.2,
       Diet == "IM" & Segment == "." ~ 2.2,
       Diet == "." & Segment == "PI" ~ 1.8,
-      TRUE ~ 2.2),
+      TRUE ~ 2.2
+      ),
     # position of p value on the x axis 
     p_xpos = (start + end) / 2,
     # position of horizontal bar and p value on the y axis 
-    y = c(0.82, 0.85, 0.96, 1.0, 0.9, 0.95, 1.05, 1.1,
-          5.8, 6.0, 5.4, 5.6, 6.3, 6.6, 5.9, 6.2)
-    ) 
+    y = c(0.90, 0.91, 0.98, 1.0, 0.97, 1.03, 1.05, 1.09)
+  ) 
 ```
 
 Alpha diversity plots.
 
 ```{r}
-plist <- lapply(levels(alph$alph_indx), function(x) {
+alph_plots <- lapply(levels(alph$alph_indx), function(x) {
   # filter data
-  alph_sub <- filter(alph, alph_indx == x)
+  alph <- filter(alph, alph_indx == x)
   
-  alph_m <- filter(alph_sub, !SampleType %in% c("Feed", "Water")) %>%
+  # alpha diversity group mean
+  alph_mean <- filter(alph, !SampleType %in% c("Feed", "Water")) %>%
     group_by(alph_indx, Diet, Source, Segment) %>% 
-    summarise(m = mean(value))
+    summarise(mean = mean(value))
   
-  p_main_sub <- filter(p_main, alph_indx == x)
+  # p value of main effects
+  p_main <- filter(p_main, alph_indx == x)
   
-  p_cc_sub <- filter(p_cc, alph_indx == x)
+  # p value of conditional contrasts
+  p_cc <- filter(p_cc, alph_indx == x)
   
   # make plots
-  ggplot(alph_sub, aes(x = Diet, y = value)) +
+  ggplot(alph, aes(x = Diet, y = value)) +
     geom_point(
       aes(group = Segment), 
       alpha = 0.3, 
       position = position_dodge(0.8)) +
     # add data summary: mean ± sd
     stat_summary(
-      data = filter(alph_sub, !SampleType %in% c("Feed", "Water")),
+      data = filter(alph, !SampleType %in% c("Feed", "Water")),
       aes(color = Segment, group = Segment), 
       fun.data = "mean_sdl", 
       fun.args = list(mult = 1), 
       geom = "pointrange",  
       size = 0.5,
-      position = position_dodge(0.8)) +
+      position = position_dodge(0.8)
+      ) +
     # use line to show changes in the group means
     geom_line(
-      data = alph_m,
-      aes(y = m, color = Segment, group = Segment, linetype = Segment), 
+      data = alph_mean,
+      aes(y = mean, color = Segment, group = Segment, linetype = Segment), 
       size = 0.5, 
-      position = position_dodge(0.8)) + 
+      position = position_dodge(0.8)
+      ) + 
     # add p values of main effects
     geom_richtext(
-      data = p_main_sub,
+      data = p_main,
       aes(x = Inf, y = Inf, label = lab_main), 
       fill = NA, # remove background 
       label.color = NA, # remove outline
-      size = 3, 
+      size = 3.5, 
       hjust = 1, 
-      vjust = 1.05) +
+      vjust = 1.05
+      ) +
     # the following two geoms add p values of post-hoc tests
     geom_segment( # add bar
-      data = p_cc_sub,
-      aes(x = start, xend = end, y = y, yend = y)) +
+      data = p_cc,
+      aes(x = start, xend = end, y = y, yend = y)
+      ) +
     geom_text( # add p values
-      data = p_cc_sub,
+      data = p_cc,
       aes(x = p_xpos, y = y, label = p), 
       size = 3, 
-      vjust = -0.1) +
+      vjust = -0.1
+      ) +
     facet_wrap(~Source, nrow = 1) +
     scale_color_brewer(palette = "Dark2") +
     scale_y_continuous(expand = expansion(mult = c(0.03, 0.4))) +
@@ -542,44 +508,39 @@ Assemble plots.
 
 ```{r, fig.width=7, fig.height=11}
 plot_grid(
-  plist[[1]] + 
-    theme(
-      axis.text.x = element_blank(), 
-      legend.margin = margin(0, 0, 0, 0),
-      legend.box.margin = margin(0, 0, -8, 0)
-      ),
-  plist[[2]] + 
-    theme(
-      axis.text.x = element_blank(), 
-      legend.position = "none",
-      plot.margin = margin(t = -0.7, unit = "cm")
-      ),
-  plist[[3]] + 
-    theme(
-      axis.text.x = element_blank(), 
-      legend.position = "none",
-      plot.margin = margin(t = -0.5, unit = "cm")
-      ),
-  plist[[4]] + 
+  alph_plots[[1]] + 
+    theme(axis.text.x = element_blank(), 
+          legend.margin = margin(0, 0, 0, 0),
+          legend.box.margin = margin(0, 0, -8, 0)),
+  alph_plots[[2]] + 
+    theme(axis.text.x = element_blank(), 
+          legend.position = "none",
+          plot.margin = margin(t = -0.7, unit = "cm")),
+  alph_plots[[3]] + 
+    theme(axis.text.x = element_blank(), 
+          legend.position = "none",
+          plot.margin = margin(t = -0.5, unit = "cm")),
+  alph_plots[[4]] + 
     labs(x = "Diet")+
-    theme(
-      legend.position = "none",
-      plot.margin = margin(t = -0.5, unit = "cm")
-      ),
-  ncol = 1, align = "v", rel_heights = c(1.3, 1, 1, 1.1)) 
+    theme(legend.position = "none",
+          plot.margin = margin(t = -0.5, unit = "cm")),
+  ncol = 1, 
+  align = "v", 
+  rel_heights = c(1.3, 1, 1, 1.1)
+  ) 
 ```
 
-For simplicity, we'll only show Shannon's index and Faith's PD in the Figure 4.
+For simplicity, we'll only show Faith's PD and Shannon's index in the Figure 3.
 
 ```{r, fig.width=7, fig.height=6}
 plot_grid(
-  plist[[4]] + 
+  alph_plots[[4]] + 
     theme(
       axis.text.x = element_blank(), 
       legend.margin = margin(0, 0, 0, 0),
       legend.box.margin = margin(0, 0, -8, 0)
       ),
-  plist[[3]] +
+  alph_plots[[3]] +
     labs(x = "Diet") +
     theme(
       legend.position = "none",
@@ -588,7 +549,7 @@ plot_grid(
   ncol = 1, align = "v", rel_heights = c(1.15, 1)) 
 
 # export plot
-ggsave(here("result/figure/Figure 4.tiff"), width = 7, height = 6,
+ggsave(here("result/figure/Figure 3.tiff"), width = 7, height = 6,
        units = "in", dpi = 300, compression = "lzw")
 ```
 
@@ -599,15 +560,15 @@ Initial box plot.
 ```{r}
 bp_wt_mcs <- alph_tm %>%
   mutate(SampleType = factor(SampleType, levels = c("Water", "PIM", "DIM"))) %>%
-  ggplot(aes(x = SampleType, y = value)) +
-  geom_boxplot(aes(color = SampleType)) +
-  geom_point(aes(color = SampleType)) +
-  facet_wrap(~alph_indx, scales = "free_y", nrow = 1) +
-  scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
-  scale_color_manual(values = c("grey50", brewer.pal(2, "Paired"))) +
-  labs(x = "Sample type") +
-  theme_bw(base_size = 12) +
-  theme(legend.position = "none")
+    ggplot(aes(x = SampleType, y = value)) +
+    geom_boxplot(aes(color = SampleType)) +
+    geom_point(aes(color = SampleType)) +
+    facet_wrap(~alph_indx, scales = "free_y", nrow = 1) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
+    scale_color_manual(values = c("#B3B3B3", "#A6CEE3", "#1F78B4")) +
+    labs(x = "Sample type") +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "none")
 ```
 
 Add *p* values.
@@ -617,9 +578,9 @@ Add *p* values.
 p_t.test <- ungroup(t_test) %>%
   separate(comparison, sep = "-", c("start", "end")) %>%
   mutate(p_adj = paste0("italic(p) == ", p_adj),
-  y = c(120, 130, 0.92, 0.95, 5.3, 5.50, 40, 43))
+  y = c(270, 295, 0.95, 0.98, 6.6, 6.9, 41, 44))
 
-# add p value annotation
+# add p values 
 bp_wt_mcs <- bp_wt_mcs + 
   geom_signif(
     data = p_t.test,
@@ -637,31 +598,33 @@ Figure S2.
 
 ```{r, fig.width=4, fig.height=4}
 alph_tm %>%
-  mutate(SampleType = factor(SampleType, levels = c("Water", "PIM", "DIM"))) %>%
   filter(alph_indx %in% c("Shannon's index", "Faith's PD")) %>%
+  mutate(
+    alph_indx  = factor(alph_indx, levels = c("Faith's PD", "Shannon's index")),
+    SampleType = factor(SampleType, levels = c("Water", "PIM", "DIM"))
+    ) %>%
   ggplot(aes(x = SampleType, y = value)) +
-  geom_boxplot(aes(color = SampleType)) +
-  geom_point(aes(color = SampleType)) +
-  geom_signif(
-    data = filter(p_t.test, alph_indx %in% c("Shannon's index", "Faith's PD")),
-    aes(xmin = start, xmax = end, annotations = p_adj, y_position = y),
-    tip_length = 0.01,
-    textsize = 3,
-    parse = TRUE,
-    manual = T
-    ) +
-  facet_wrap(~alph_indx, scales = "free_y", nrow = 1) +
-  scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
-  scale_color_manual(values = c("grey50", brewer.pal(2, "Paired"))) +
-  labs(x = "") +
-  theme_bw(base_size = 12) +
-  theme(legend.position = "none")
+    geom_boxplot(aes(color = SampleType)) +
+    geom_point(aes(color = SampleType)) +
+    geom_signif(
+      data = filter(p_t.test, alph_indx %in% c("Shannon's index", "Faith's PD")),
+      aes(xmin = start, xmax = end, annotations = p_adj, y_position = y),
+      tip_length = 0.01,
+      textsize = 3,
+      parse = TRUE,
+      manual = T
+      ) +
+    facet_wrap(~alph_indx, scales = "free_y", nrow = 1) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
+    scale_color_manual(values = c("#B3B3B3", "#A6CEE3", "#1F78B4")) +
+    labs(x = "") +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "none")
 
 # export plot
 ggsave(here("result/figure/Figure S2.tiff"), width = 4, height = 4,
        units = "in", dpi = 300, compression = "lzw")
 ```
-
 
 # Session information
 

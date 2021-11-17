@@ -22,7 +22,7 @@ require(knitr)
 opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = TRUE)
 ```
 
-`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "left",  buttonSide = "left")`
+`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "right",  buttonSide = "right")`
 
 # Getting ready
 
@@ -286,18 +286,18 @@ After inspecting the feature prevalence barplots and the correlation plots, the 
 ```{r}
 contam_pcr1 <- select(decontam_pcr1, OTU, tax) %>%
   distinct() %>%
-  # remove Pseudomonas aeruginosa so that it won't be selected as a contaminating feature
-  slice(-74) %>% 
   # gather contaminating features using their taxonomic labels
-  filter(grepl("Pseudomonas|Halomonas|Shewanella|Burkholderiaceae|Candidatus|Pelobacter|
-               |Paracoccus|Cutibacterium|Acinetobacter|Cloacibacterium", tax))
+  filter(grepl("Pseudomonas|Halomonas|Shewanella|Burkholderiaceae|Pelobacter|Cutibacterium", tax))
 ```
 
 Check the distibution of contaminating features among samples.
 
 ```{r, fig.width=16, fig.height=10}
 prune_taxa(taxa_names(ps_tss) %in% contam_pcr1$OTU, ps_tss) %>%
-  plot_bar(x = "SampleName", fill = "Genus", title = "Distibution of contaminating features: PCR batch1") +
+  plot_bar(
+    x = "SampleName", fill = "Genus", 
+    title = "Distibution of contaminating features: PCR batch1"
+    ) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +  
   scale_fill_brewer(palette = "Paired") +
   theme_bw() +
@@ -493,8 +493,7 @@ While some common reagent contaminants are present in the negative controls of P
 ```{r}
 contam_pcr3 <- select(decontam_pcr3, OTU, tax) %>%
   distinct() %>%
-  filter(grepl("Burkholderiaceae|Xanthobacteraceae|Chitinophagaceae|
-               |Caulobacteraceae|Sphingomonas|Cutibacterium", tax))
+  filter(grepl("Burkholderiaceae|Xanthobacteraceae|Chitinophagaceae|Sphingomonas|Cutibacterium", tax))
 ```
 
 Check the distibution of contaminating features among samples.
@@ -503,6 +502,7 @@ Check the distibution of contaminating features among samples.
 prune_taxa(taxa_names(ps_tss) %in% contam_pcr3$OTU, ps_tss) %>%
   plot_bar(x = "SampleName", fill = "Genus", title = "Distibution of contaminating features: PCR batch3") +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
+  scale_fill_brewer(palette = "Paired") +
   theme_bw() +
   theme(legend.position = "bottom", axis.text.x = element_text(angle = 90, hjust = 1))
 ```
@@ -532,8 +532,14 @@ We'll use the *decontam* package to screen potential contaminating features intr
 
 ```{r}
 # identify potential contaminating features
-contam_dna.init <- isContaminant(ps_tss_decontam_dna, conc = "DNAConcentration", neg = "IsNeg", 
-                                 method = "either", threshold = 0.5, normalize = FALSE)
+contam_dna.init <- isContaminant(
+  ps_tss_decontam_dna, 
+  conc = "DNAConcentration", 
+  neg = "IsNeg", 
+  method = "either", 
+  threshold = 0.5, 
+  normalize = FALSE
+  )
 
 # check the number of potential contaminating features
 table(contam_dna.init$contaminant)
@@ -609,11 +615,8 @@ The following features are considered as contaminants:
 ```{r}
 contam_dna <- select(decontam_dna, OTU, tax) %>%
   distinct() %>%
-  # remove Pseudomonas aeruginosa so that it won't be selected as a contaminating feature
-  slice(-47) %>% 
-  filter(grepl("Pseudomonas|Halomonas|Shewanella|Burkholderiaceae|Bacillus okhensis|
-               |Rhodobacteraceae|Acinetobacter|Microbacterium|Cloacibacterium|Vogesella|
-               |Marinobacter|Methylobacterium|Dickeya", tax))
+  filter(grepl("Pseudomonas|Halomonas|Shewanella|Burkholderiaceae|Rhodobacteraceae|
+         |Acinetobacter|Cloacibacterium|Methylobacterium", tax))
 ```
 
 Check the distibution of contaminating features among samples.
@@ -684,7 +687,7 @@ In addition to contaminants removed in the previous steps, the following feature
 ```{r}
 cross_contam_mock <- select(decontam_mock, OTU, tax) %>%
   distinct() %>%
-  slice(60:nrow(.))
+  slice(30:nrow(.))
 ```
 
 Check the distibution of contaminating features.

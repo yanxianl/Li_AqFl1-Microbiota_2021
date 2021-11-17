@@ -22,20 +22,20 @@ require(knitr)
 opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = TRUE)
 ```
 
-`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "left",  buttonSide = "left")`
+`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "right",  buttonSide = "right")`
 
 # Getting ready
 
-First we load the necessary packages.
+Load packages.
 
 ```{r, message = FALSE, warning = FALSE}
-library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
-library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
-library(dada2) # Accurate, high-resolution sample inference from amplicon data, Bioconductor v1.18.0  
-library(plyr) # Tools for Splitting, Applying and Combining Data, CRAN v1.8.6
-library(DT) # A Wrapper of the JavaScript Library 'DataTables', CRAN v0.17 
-library(plotly) # Create Interactive Web Graphics via 'plotly.js', CRAN v4.9.3
-library(biomformat) # An interface package for the BIOM file format, Bioconductor v1.18.0
+library(here) # A Simpler Way to Find Your Files, CRAN 
+library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN
+library(dada2) # Accurate, high-resolution sample inference from amplicon data, Bioconductor
+library(plyr) # Tools for Splitting, Applying and Combining Data, CRAN
+library(DT) # A Wrapper of the JavaScript Library 'DataTables', CRAN
+library(plotly) # Create Interactive Web Graphics via 'plotly.js', CRAN
+library(biomformat) # An interface package for the BIOM file format, Bioconductor
 
 # Set seed
 set.seed(1910)
@@ -65,7 +65,8 @@ head(sample.names)
 We start by visualizing the quality profiles of the forward reads:
 
 ```{r see-quality-F}
-plotQualityProfile(fnFs[1:2])
+plotQualityProfile(fnFs[1:2]) + 
+  scale_x_continuous(limits = c(0, 300), breaks = 0:6*50)
 ```
 
 In gray-scale is a heat map of the frequency of each quality score at each base position. The median quality score at each position is shown by the green line, and the quantiles of the quality score distribution by the orange lines. The red line shows the scaled proportion of reads that extend to at least that position (this is more useful for other sequencing technologies, as Illumina reads are typically all the same length, hence the flat red line).
@@ -75,7 +76,8 @@ The forward reads are good quality. We generally trim the last few nucleotides t
 Now we visualize the quality profile of the reverse reads:
 
 ```{r see-quality-R}
-plotQualityProfile(fnRs[1:2])
+plotQualityProfile(fnRs[1:2]) + 
+  scale_x_continuous(limits = c(0, 300), breaks = 0:6*50)
 ```
 
 The reverse reads are of significantly worse quality, which is common in Illumina sequencing. This isn't too worrisome, as DADA2 incorporates quality information into its error model which makes the algorithm robust to lower quality sequence, but trimming as the average qualities crash will improve the algorithm's sensitivity to rare sequence variants. Based on these profiles, we will truncate the reverse reads at position 248 where the quality distribution crashes.
@@ -128,7 +130,7 @@ The error rates for each possible transition (A→C, A→G, ...) are shown. Poin
 
 # Sample inference
 
-We are now ready to apply [the core sample inference algorithm](https://www.nature.com/articles/nmeth.3869#methods) to the data. By default, the `dada` function processes each sample independently. However, pooling information across samples can increase sensitivity to sequence variants that may be present at very low frequencies in multiple samples. Here, we set `pool = TRUE` to retain the singletons for the downstream species richness estimation.
+We are now ready to apply [the core sample inference algorithm](https://www.nature.com/articles/nmeth.3869#methods) to the data. By default, the `dada` function processes each sample independently, which removes singletons in each samples. However, pooling information across samples can increase sensitivity to sequence variants that may be present at very low frequencies in multiple samples. The dada2 package offers two types of pooling. `dada(..., pool=TRUE)` performs [standard pooled processing, in which all samples are pooled together for sample inference](https://benjjneb.github.io/dada2/pool.html). `dada(..., pool="pseudo")` performs pseudo-pooling, in which [samples are processed independently after sharing information between samples, approximating pooled sample inference in linear time](https://benjjneb.github.io/dada2/pseudo.html#Pseudo-pooling). Here, we use the default method (`pool = FALSE`).
 
 ```{r dada}
 dadaFs <- dada(filtFs, err = errF, pool = FALSE, multithread = TRUE) 
@@ -202,11 +204,11 @@ ggplot(seqLen, aes(x = seqLen)) +
   theme_bw() 
 ```
 
-**Considerations**: Sequences that are much longer or shorter than expected may be the result of non-specific priming. The sequence lengths fall within the range of the expected amplicon sizes, most of which fall between 270 and 345 with a long tail on the right. We'll just leave them as they are.
+**Considerations**: Sequences that are much longer or shorter than expected may be the result of non-specific priming. The sequence lengths fall within the range of the expected amplicon sizes. We'll just leave them as they are.
 
 # Remove chimeras
 
-The core `dada` method corrects substitution and indel errors, but chimeras remain. Fortunately, the accuracy of sequence variants after denoising makes identifying chimeric ASVs simpler than when dealing with fuzzy OTUs. Chimeric sequences are identified if they can be exactly reconstructed by combining a left-segment and a right-segment from two more abundant "parent" sequences. As we used `pool = TRUE` during the sample inference, we should use `method = "pooled"` for the chimera removal.
+The core `dada` method corrects substitution and indel errors, but chimeras remain. Fortunately, the accuracy of sequence variants after denoising makes identifying chimeric ASVs simpler than when dealing with fuzzy OTUs. Chimeric sequences are identified if they can be exactly reconstructed by combining a left-segment and a right-segment from two more abundant "parent" sequences. As we used `pool = FALSE` during the sample inference, we should use `method = "consensus"` for the chimera removal.
 
 ```{r remove-chimeras, message = FALSE}
 seqtab.nochim <- removeBimeraDenovo(seqtab, method = "consensus", multithread = TRUE, verbose = TRUE)
@@ -276,7 +278,7 @@ uniquesToFasta(seqtab.nochim, fout = here::here("data/intermediate/dada2/rep-seq
 
 # Acknowledgements
 
-The processing of raw sequence data into an ASV table is based on the online [DADA2 tutorial (1.12)](https://benjjneb.github.io/dada2/tutorial.html). For more documentations and tutorials, visit the [DADA2 website](https://benjjneb.github.io/dada2/index.html).
+The processing of raw sequence data into an ASV table is based on the online [DADA2 tutorial (1.16)](https://benjjneb.github.io/dada2/tutorial.html). For more documentations and tutorials, visit the [DADA2 website](https://benjjneb.github.io/dada2/index.html).
 
 # Session information
 

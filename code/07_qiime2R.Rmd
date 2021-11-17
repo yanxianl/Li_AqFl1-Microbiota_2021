@@ -18,27 +18,26 @@ output:
 ---
 
 ```{r style, echo = FALSE, message = FALSE, warning = FALSE}
-require(knitr)
-opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = FALSE)
+knitr::opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = FALSE)
 ```
 
-`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "left",  buttonSide = "left")`
+`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "right",  buttonSide = "right")`
 
 # Getting ready
 
 Set system locale
 
-```{r}
+```{r, results='hide'}
 Sys.setlocale(category = "LC_ALL", locale = "Greek")
 ```
 
 Load packages
 
 ```{r load-package}
-library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
-library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
-library(qiime2R) # Import qiime2 artifacts to R, [github::jbisanz/qiime2R] v0.99.35  
-library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
+library(here) # A Simpler Way to Find Your Files, CRAN 
+library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN 
+library(qiime2R) # Import qiime2 artifacts to R, [github::jbisanz/qiime2R] 
+library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor 
 ```
 
 # Phyloseq object
@@ -49,24 +48,28 @@ library(phyloseq) # Handling and analysis of high-throughput microbiome census d
 mtd <- read_tsv(here("data/metadata.tsv"), comment = "#q2") %>%
   rename(SampleID = "#SampleID") %>% 
   column_to_rownames("SampleID") %>% 
-  mutate(Diet = factor(Diet, levels = c("REF", "IM")),
-         Segment = factor(Segment, levels = c("PI", "DI")),
-         Source = factor(
-           Source, 
-           levels = c("Feed", "Water", "Digesta", "Mucosa", 
-                      "Mock", "DNA-extraction", "Amplicon-PCR")),
-         SampleType = factor(
-           SampleType, 
-           levels = c("REF-PID", "REF-PIM", "REF-DID", "REF-DIM", 
-                      "IM-PID", "IM-PIM", "IM-DID", "IM-DIM", 
-                      "Feed", "Water", "Extraction-blank", "PCR-blank", "Mock")),
-         PCRBatch = factor(PCRBatch, levels = 1:3)) 
+  mutate(
+    Diet = factor(Diet, levels = c("REF", "IM")),
+    Segment = factor(Segment, levels = c("PI", "DI")),
+    Source = factor(
+     Source, 
+     levels = c("Feed", "Water", "Digesta", "Mucosa", 
+                "Mock", "DNA-extraction", "Amplicon-PCR")
+     ),
+    SampleType = factor(
+     SampleType, 
+     levels = c("REF-PID", "REF-PIM", "REF-DID", "REF-DIM", 
+                "IM-PID", "IM-PIM", "IM-DID", "IM-DIM", 
+                "Feed", "Water", "Extraction-blank", "PCR-blank", "Mock")
+     ),
+    PCRBatch = factor(PCRBatch, levels = 1:3)
+    ) 
 ```
 
 ## Feature table
 
 ```{r}
-otu <- read_qza(here("data/intermediate/qiime2/97otu/table-filtered-97otu-sepp-inserted.qza")) %>%
+count_tbl <- read_qza(here("data/intermediate/qiime2/asv/table-filtered-sepp-inserted.qza")) %>%
   pluck("data") %>% 
   as("matrix")
 ```
@@ -75,13 +78,19 @@ otu <- read_qza(here("data/intermediate/qiime2/97otu/table-filtered-97otu-sepp-i
 
 ```{r}
 txnm <- read_qza(here("data/intermediate/qiime2/asv/taxonomy-silva132.qza"))
-txnm <- txnm$data %>% 
+txnm_tbl <- txnm$data %>% 
   as.data.frame() %>%
-  mutate(Taxon = gsub("D_0", "k", Taxon), Taxon = gsub("D_1", "p", Taxon),
-         Taxon = gsub("D_2", "c", Taxon), Taxon = gsub("D_3", "o", Taxon),
-         Taxon = gsub("D_4", "f", Taxon), Taxon = gsub("D_5", "g", Taxon),
-         Taxon = gsub("D_6", "s", Taxon)) %>%
-  separate(Taxon, sep = ";", c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")) %>% 
+  mutate(
+    Taxon = gsub("D_0", "k", Taxon), Taxon = gsub("D_1", "p", Taxon),
+    Taxon = gsub("D_2", "c", Taxon), Taxon = gsub("D_3", "o", Taxon),
+    Taxon = gsub("D_4", "f", Taxon), Taxon = gsub("D_5", "g", Taxon),
+    Taxon = gsub("D_6", "s", Taxon)
+    ) %>%
+  separate(
+    col = Taxon, 
+    sep = ";", 
+    into = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+    ) %>% 
   column_to_rownames("Feature.ID") %>%
   select(-Confidence)
 ```
@@ -89,7 +98,7 @@ txnm <- txnm$data %>%
 ## Phylogeny
 
 ```{r}
-tree <- read_qza(here("data/intermediate/qiime2/97otu/insertion-tree-97otu.qza"))
+tree <- read_qza(here("data/intermediate/qiime2/asv/insertion-tree.qza"))
 ```
 
 ## Assemble a phyloseq object
@@ -97,18 +106,22 @@ tree <- read_qza(here("data/intermediate/qiime2/97otu/insertion-tree-97otu.qza")
 Assemble data.
 
 ```{r}
-ps <- phyloseq(sample_data(mtd), 
-               otu_table(otu, taxa_are_rows = TRUE),
-               tax_table(as.matrix(txnm)),
-               phy_tree(tree$data))
+ps <- phyloseq(
+  sample_data(mtd), 
+  otu_table(count_tbl, taxa_are_rows = TRUE),
+  tax_table(as.matrix(txnm_tbl)),
+  phy_tree(tree$data)
+  )
 ```
 
 # Alpha-diversity
 
 ```{r}
 # get absolute file path for alpha diversity indices
-fp_alph <- list.files(here("data/intermediate/qiime2/97otu/core-metrics-results/"), 
-                      pattern = "*vector.qza", full.names = TRUE)
+fp_alph <- list.files(
+  here("data/intermediate/qiime2/asv/core-metrics-results/"), 
+  pattern = "*vector.qza", full.names = TRUE
+  )
 
 # get alpha diversity index names
 names_alph <- sapply(strsplit(basename(fp_alph), "_vector"), `[`, 1)
@@ -126,8 +139,10 @@ names(alph) <- names_alph
 
 ```{r}
 # get absolute file path of distance metrics
-fp_dist_dgst <- list.files(here("data/intermediate/qiime2/97otu/core-metrics-results-digesta/"), 
-                           pattern = "*distance_matrix.qza", full.names = TRUE)
+fp_dist_dgst <- list.files(
+  here("data/intermediate/qiime2/asv/core-metrics-results-digesta/"), 
+  pattern = "*distance_matrix.qza", full.names = TRUE
+  )
 
 # get distance metric names
 names_dist_dgst <- sapply(strsplit(basename(fp_dist_dgst), "_distance"), `[`, 1)
@@ -137,7 +152,9 @@ dist_dgst <- lapply(fp_dist_dgst, read_qza)
 names(dist_dgst) <- names_dist_dgst
 
 # import Aitchison distance
-dist_dgst_atch <- read_qza(here("data/intermediate/qiime2/97otu/robust-Aitchison-pca-digesta/distance_matrix.qza"))
+dist_dgst_atch <- read_qza(
+  here("data/intermediate/qiime2/asv/robust-Aitchison-pca-digesta/distance_matrix.qza")
+  )
 
 # add Aitchison distance to the distance metric list
 dist_dgst <- c(dist_dgst, aitchison = list(dist_dgst_atch))
@@ -147,8 +164,10 @@ dist_dgst <- c(dist_dgst, aitchison = list(dist_dgst_atch))
 
 ```{r}
 # get absolute file path of distance metrics
-fp_dist_mcsFdWt <- list.files(here("data/intermediate/qiime2/97otu/core-metrics-results-mucosa-feed-water/"), 
-                              pattern = "*distance_matrix.qza", full.names = TRUE)
+fp_dist_mcsFdWt <- list.files(
+  here("data/intermediate/qiime2/asv/core-metrics-results-mucosa-feed-water/"), 
+  pattern = "*distance_matrix.qza", full.names = TRUE
+  )
 
 # get file names
 names_dist_mcsFdWt <- sapply(strsplit(basename(fp_dist_mcsFdWt), "_distance"), `[`, 1)
@@ -158,7 +177,9 @@ dist_mcsFdWt <- lapply(fp_dist_mcsFdWt, read_qza)
 names(dist_mcsFdWt) <- names_dist_mcsFdWt
 
 # import Aitchison distance
-dist_mcsFdWt_atch <- read_qza(here("data/intermediate/qiime2/97otu/robust-Aitchison-pca-mucosa-feed-water/distance_matrix.qza"))
+dist_mcsFdWt_atch <- read_qza(
+  here("data/intermediate/qiime2/asv/robust-Aitchison-pca-mucosa-feed-water/distance_matrix.qza")
+  )
 
 # add Aitchison distance to the distance metric list
 dist_mcsFdWt <- c(dist_mcsFdWt, aitchison = list(dist_mcsFdWt_atch))
@@ -170,8 +191,10 @@ dist_mcsFdWt <- c(dist_mcsFdWt, aitchison = list(dist_mcsFdWt_atch))
 
 ```{r}
 # get absolute file path of pcoa results
-fp_ord_dgst <- list.files(here("data/intermediate/qiime2/97otu/core-metrics-results-digesta/"), 
-                          pattern = "*pcoa_results.qza", full.names = TRUE)
+fp_ord_dgst <- list.files(
+  here("data/intermediate/qiime2/asv/core-metrics-results-digesta/"), 
+  pattern = "*pcoa_results.qza", full.names = TRUE
+  )
 
 # get file names
 names_ord_dgst <- sapply(strsplit(basename(fp_ord_dgst), "_pcoa"), `[`, 1)
@@ -181,7 +204,9 @@ ord_dgst <- lapply(fp_ord_dgst, read_qza)
 names(ord_dgst) <- names_ord_dgst
 
 # import pcoa result of Aitchison distance
-ord_dgst_atch <- read_qza(here("data/intermediate/qiime2/97otu/robust-Aitchison-pca-digesta/biplot.qza"))
+ord_dgst_atch <- read_qza(
+  here("data/intermediate/qiime2/asv/robust-Aitchison-pca-digesta/biplot.qza")
+  )
 
 # add pcoa result of Aitchison distance to the pcoa result list
 ord_dgst <- c(ord_dgst, aitchison = list(ord_dgst_atch))
@@ -191,8 +216,10 @@ ord_dgst <- c(ord_dgst, aitchison = list(ord_dgst_atch))
 
 ```{r}
 # get absolute file path of pcoa results
-fp_ord_mcsFdWt <- list.files(here("data/intermediate/qiime2/97otu/core-metrics-results-mucosa-feed-water/"), 
-                             pattern = "*pcoa_results.qza", full.names = TRUE)
+fp_ord_mcsFdWt <- list.files(
+  here("data/intermediate/qiime2/asv/core-metrics-results-mucosa-feed-water/"), 
+  pattern = "*pcoa_results.qza", full.names = TRUE
+  )
 
 # get file names
 names_ord_mcsFdWt <- sapply(strsplit(basename(fp_ord_mcsFdWt), "_pcoa"), `[`, 1)
@@ -202,7 +229,9 @@ ord_mcsFdWt <- lapply(fp_ord_mcsFdWt, read_qza)
 names(ord_mcsFdWt) <- names_ord_mcsFdWt
 
 # import pcoa result of Aitchison distance
-ord_mcsFdWt_atch <- read_qza(here("data/intermediate/qiime2/97otu/robust-Aitchison-pca-mucosa-feed-water/biplot.qza"))
+ord_mcsFdWt_atch <- read_qza(
+  here("data/intermediate/qiime2/asv/robust-Aitchison-pca-mucosa-feed-water/biplot.qza")
+  )
 
 # add pcoa result of Aitchison distance to the pcoa result list
 ord_mcsFdWt <- c(ord_mcsFdWt, aitchison = list(ord_mcsFdWt_atch))

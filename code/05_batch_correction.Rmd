@@ -18,175 +18,145 @@ output:
 ---
 
 ```{r style, echo = FALSE, message = FALSE, warning = FALSE}
-require(knitr)
-opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = FALSE)
+knitr::opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = FALSE)
 ```
 
-`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "left",  buttonSide = "left")`
+`r Hmisc::hidingTOC(buttonLabel = "Outline (hide)", tocSide = "right",  buttonSide = "right")`
 
 # Getting ready
 
 ## Load packages
 
 ```{r}
-library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
-library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
-library(qiime2R) # Import qiime2 artifacts to R, [github::jbisanz/qiime2R] v0.99.35  
-library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
-library(microbiome) # Microbiome Analytics, Bioconductor v1.12.0
-library(picante) # Integrating Phylogenies and Ecology, CRAN v1.8.2 
-library(MicrobeR) # Handy functions for microbiome analysis in R, [github::jbisanz/MicrobeR] v0.3.2 
-library(mixOmics) # Omics Data Integration, Bioconductor v6.14.0 
-library(RUVSeq) # Remove Unwanted Variation from RNA-Seq Data, Bioconductor v1.24.0
-library(sva) # Surrogate Variable Analysis, Bioconductor v3.38.0 
-library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN v1.1.1  
-library(ggpubr) # 'ggplot2' Based Publication Ready Plots, CRAN v0.4.0
-library(ggh4x) # Hacks for 'ggplot2', CRAN v0.1.2.1 
-library(plotly) # Create Interactive Web Graphics via 'plotly.js', CRAN v4.9.3
-library(RColorBrewer) # ColorBrewer Palettes, CRAN v1.1-2 
-library(vegan) # Community Ecology Package, CRAN v2.5-7 
+library(here) # A Simpler Way to Find Your Files, CRAN 
+library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN  
+library(qiime2R) # Import qiime2 artifacts to R, [github::jbisanz/qiime2R]   
+library(mixOmics) # Omics Data Integration, Bioconductor  
+#library(RUVSeq) # Remove Unwanted Variation from RNA-Seq Data, Bioconductor 
+#library(sva) # Surrogate Variable Analysis, Bioconductor  
+library(patchwork) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN   
+library(vegan) # Community Ecology Package, CRAN  
 ```
 
 ## Import data
 
 ```{r}
 # metadata
-mtd <- read_tsv(here("data/metadata.tsv"), comment = "#q2") %>%
-  rename(SampleID = "#SampleID") %>% 
-  column_to_rownames("SampleID") %>% 
-  mutate(PCRBatch   = factor(PCRBatch),
-         Diet = factor(Diet, levels = c("REF", "IM")),
-         Segment = factor(Segment, levels = c("PI", "DI")),
-         Source = factor(
-           Source, 
-           levels = c("Feed", "Water", "Digesta", "Mucosa",
-                      "Mock", "DNA-extraction", "Amplicon-PCR")),
-         SampleType = factor(
-           SampleType, 
-           levels = c("REF-PID", "REF-PIM", "REF-DID", "REF-DIM", 
-                      "IM-PID", "IM-PIM", "IM-DID", "IM-DIM", 
-                      "Feed", "Water", "Extraction-blank", "PCR-blank", "Mock"))) 
+mtd <- read_tsv(here("data/metadata.tsv"), comment = "#q2")
 
 # feature table
-otu <- read_qza(here("data/intermediate/qiime2/97otu/table-filtered-97otu-sepp-inserted.qza")) %>%
-  pluck("data") %>% 
-  as("matrix")
-
-# taxonomy
-txnm <- read_qza(here("data/intermediate/qiime2/asv/taxonomy-silva132.qza"))
-txnm <- txnm$data %>% 
-  as.data.frame() %>%
-  mutate(Taxon = gsub("D_0", "k", Taxon), Taxon = gsub("D_1", "p", Taxon),
-         Taxon = gsub("D_2", "c", Taxon), Taxon = gsub("D_3", "o", Taxon),
-         Taxon = gsub("D_4", "f", Taxon), Taxon = gsub("D_5", "g", Taxon),
-         Taxon = gsub("D_6", "s", Taxon)) %>%
-  separate(Taxon, sep = ";", c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")) %>% 
-  column_to_rownames("Feature.ID") %>%
-  select(-Confidence)
-
-# phylogeny
-tree <- read_qza(here("data/intermediate/qiime2/97otu/insertion-tree-97otu.qza"))
-
-# assemble a phyloseq object
-ps <- phyloseq(sample_data(mtd), 
-               otu_table(otu, taxa_are_rows = TRUE),
-               tax_table(as.matrix(txnm)),
-               phy_tree(tree$data))
+asv_tbl <- read_qza(here("data/intermediate/qiime2/asv/table-filtered-sepp-inserted.qza")) %>%
+  pluck("data") 
 ```
 
 ## Data preprocessing
 
 ```{r}
-# change OTU names
-indx <- formatC(1:ntaxa(ps), width = nchar(ntaxa(ps)), format = "d", flag = "0")
-taxa_names(ps) <- paste0("OTU", indx)
+# metadata
+mtd <- mtd %>% 
+  filter(!SampleType %in% c("Extraction-blank", "PCR-blank", "Mock")) %>%
+  rename(SampleID = "#SampleID") %>% 
+  column_to_rownames("SampleID") %>% 
+  mutate(
+    PCRBatch = factor(PCRBatch),
+    SampleType = factor(
+      SampleType, 
+      levels = c("REF-PID", "REF-PIM", "REF-DID", "REF-DIM", "IM-PID", "IM-PIM", 
+                 "IM-DID", "IM-DIM", "Water", "Feed")
+      )
+    )  
 
-# filter data
-ps <- subset_samples(ps, !SampleType %in% c("Extraction-blank", "PCR-blank", "Mock")) # remove control samples
-
-# extract metadata, otu table, taxonomy and phylogeny from phyloseq
-mtd <- data.frame(sample_data(ps), check.names = FALSE)
-otu <- as.data.frame(otu_table(ps)) %>% t()
-txnm <- tax_table(ps) %>% as("matrix") %>% as.data.frame()
-tree <- phy_tree(ps)
+# feature table
+asv_tbl <- asv_tbl[, rownames(mtd)]
 ```
 
 # Assess batch effect
 
 ```{r}
 # Centered log-ratio transformation
-otu_clr <- logratio.transfo(otu, logratio = "CLR", offset = 1 ) %>% as("matrix")
+asv_tbl_clr <- logratio.transfo(t(asv_tbl), logratio = "CLR", offset = 1 ) %>% 
+  as("matrix")
 
 # PCA
-pca_before <- pca(otu_clr, ncomp = 3)
+pca_before <- pca(asv_tbl_clr, ncomp = 3)
 
 # PCA plot
 pcaPlot_before <- cbind(mtd, pca_before$variates$X) %>%
   ggplot(aes(x = PC1, y = PC2, color = SampleType, shape = PCRBatch)) +
   geom_point(size = 2) +
-  geom_line(aes(group = SampleName), color = "black") + # connect paired technical replicates by line
-  labs(title = "Before batch correction", color = "Sample type", shape = "PCR batch", 
-       x = paste0("PC1: ", round(100 * pca_before$explained_variance[1], 2), "%"),
-       y = paste0("PC2: ", round(100 * pca_before$explained_variance[2], 2), "%")) +
-  scale_color_manual(values = brewer.pal(n = 12, name = "Paired")[c(1:10, 12)]) +
+  # connect paired technical replicates by line
+  geom_line(aes(group = SampleName), color = "black") +
+  labs(
+    title = "Before batch correction", color = "Sample type", shape = "PCR batch", 
+    x = paste0("PC1: ", round(100 * pca_before$explained_variance[1], 2), "%"),
+    y = paste0("PC2: ", round(100 * pca_before$explained_variance[2], 2), "%")
+    ) +
+  scale_color_brewer(palette = "Paired") +
   theme_bw() 
 
 pcaPlot_before 
 ```
 
-From the PCA plot, we can tell that technical replicate samples are far apart. Mucosa samples from fish fed the REF diet form 2 clusters based on PCR batches. There's a strong PCR batch effect.
+From the PCA plot, we can tell that technical replicates (connected by the lines) are far apart. Mucosa samples (in dark green and blue color) from fish fed the REF diet form two clusters based on PCR batches. 
 
 # Correct batch effect
 
 ## RUVSeq
 
-[RUVSeq](https://www.nature.com/articles/nbt.2931) removes unwanted variation in RNASeq data using replicate samples and negative control genes. Here we use it for correcting batch effects in microbiome data. The two main parameters of RUVSeq are the number of factors of unwanted variation, k, and the set of negative control variables genes, or OTUs in our case. The choice of the parameter k is not easy and is data-dependent. Empirically, a few (2-3) factors are enough to capture the unwanted variation. In noisy data, K can be increased to 5 or 10. Note that if k is too high, the RUVSeq over-corrects for unwanted variation and ends up removing (almost) all the biological variability within the conditions. The choice of negative control variables is also somewhat data-dependent. However, RUVSeq is robust to the choice of negative control variables. One is recommend to perform extensive exploratory data analysis, comparing different values of k and sets of negative control variables.
+[RUVSeq](https://www.nature.com/articles/nbt.2931) removes unwanted variation in RNASeq data using replicate samples and negative control genes. Here we use one of its commonly used methods, RUVs, for correcting batch effects in microbiome data. The two main parameters of RUVs are the number of unwanted factors, k, and the set of negative control variables genes, or ASVs in our case. The choice of the parameter k is not easy and is data-dependent. Empirically, a few (2-3) factors are enough to capture the unwanted variation. In noisy data, K can be increased to 5 or 10. Note that if k is too high, the RUVs over-corrects for unwanted variation and ends up removing (almost) all the biological variability within the conditions. The choice of negative control variables is also somewhat data-dependent. However, RUVs is robust to the choice of negative control variables. One is recommend to perform extensive exploratory data analysis, comparing different values of k and sets of negative control variables. 
 
 ```{r}
-# calculate coefficient of variation (cv) for each otu
-cv <- t(otu) %>%
-  as.data.frame() %>%
+# sort ASVs by variance across samples
+asv_tbl <- as.data.frame(asv_tbl) %>%
   rownames_to_column("featureID") %>%
-  mutate(sd   = apply(.[, names(.) != "featureID"], 1, sd),
-         mean = apply(.[, names(.) != "featureID"], 1, mean),
-         cv   = sd / mean) %>%
-  arrange(cv)
+  mutate(
+    sd   = apply(.[, names(.) != "featureID"], 1, sd),
+    mean = apply(.[, names(.) != "featureID"], 1, mean),
+    cv   = sd / mean
+    ) %>%
+  arrange(cv) %>% # arrange ASVs by their CV
+  dplyr::select(-c(sd:cv)) %>%
+  column_to_rownames("featureID") %>%
+  as.matrix()
 
-# proportions of otus used as negative controls
+# define the proportions of ASVs to be used as negative controls
 prp <- c(0.1, 0.2, 0.5, 1) 
 
-# number of unwanted variation factors 
+# define the number of unwanted variation factors 
 k <- c(1, 2, 3, 4, 5, 10) 
 
-# get combinations of k and prp for parameter tuning
+# get combinations of k and prp for the parameter tuning
 prmt <- expand.grid(prp = prp, k = k)
 
-# sample replicate 
+# sample replicate matrix
 SampleType <- mtd$SampleType
 names(SampleType) <- rownames(mtd)
-rpl <- makeGroups(SampleType)
+rpl <- RUVSeq::makeGroups(SampleType)
 
 # batch effect correction
-ruv <- map2(
+ruvs <- map2(
   prmt$prp,
   prmt$k,
-  function(x, y) 
+  function(prp, k) 
   {
-    # get otus showing least variance at defined proportions
-    min_cv <- cv[1:round(nrow(cv) * x), ] %>%
-      mutate(featureID = paste0("^", featureID, "$")) # exact math of otu ids
-   
-    # subset otus used as negative controls
-    nc <- grepl(paste(min_cv$featureID, collapse = "|"), colnames(otu))
+  # number of negative control ASVs 
+  nmb_nc_asv <- round(nrow(asv_tbl) * prp)
+  
+  # logical vector indicating which ASVs to be used as negative controls
+  nc_vct <- rep(c(TRUE, FALSE), times = c(nmb_nc_asv , nrow(asv_tbl) - nmb_nc_asv))
     
-    # run RUVs
-    ruv <- RUVs(t(otu), nc, y, rpl)
+  # run RUVs
+  ruvs <- RUVSeq::RUVs(
+    x = asv_tbl, # raw count matrix
+    cIdx = nc_vct, # negative control features
+    k = k, # the number of unwanted factors 
+    scIdx = rpl # sample replicate matrix
+    )
   }
 )
 
 # assign names to list elements
-names(ruv) <- paste0("ruv_k", prmt$k, "_nc", prmt$prp)
-  
+names(ruvs) <- paste0("ruvs_k", prmt$k, "_nc", prmt$prp)
 ```
 
 ## ComBat-Seq
@@ -199,10 +169,10 @@ PCRBatch <- mtd$PCRBatch
 names(PCRBatch) <- rownames(mtd)
 
 # model matrix
-mod_mtrx <- model.matrix( ~ SampleType)
+mod_mtrx <- model.matrix(~SampleType)
 
 # run CombatSeq
-cmbt <- ComBat_seq(t(otu), batch = PCRBatch, covar_mod = mod_mtrx) 
+cmbt <- sva::ComBat_seq(asv_tbl, batch = PCRBatch, covar_mod = mod_mtrx) 
 ```
 
 # Evaluate methods
@@ -211,10 +181,10 @@ cmbt <- ComBat_seq(t(otu), batch = PCRBatch, covar_mod = mod_mtrx)
 
 ### RUVSeq
 
-Extract and log ratio transform batch effect corrected OTU table.
+Extract and log ratio transform batch effect corrected ASV table.
 
 ```{r}
-ruv_clr <- purrr::map(ruv, ~pluck(.x, "normalizedCounts")) %>% # get batch corrected count table
+ruvs_clr <- purrr::map(ruvs, ~pluck(.x, "normalizedCounts")) %>% # get batch corrected count table
   purrr::map(~t(.x)) %>% # transpose normalized count table
   purrr::map(~logratio.transfo(.x, logratio = 'CLR', offset = 1)) %>% # CLR transformation
   purrr::map(~as(.x, "matrix")) 
@@ -223,48 +193,32 @@ ruv_clr <- purrr::map(ruv, ~pluck(.x, "normalizedCounts")) %>% # get batch corre
 Run PCA.
 
 ```{r}
-pca_ruv <- purrr::map(ruv_clr, ~pca(.x, ncomp = 3)) 
+pca_ruvs <- purrr::map(ruvs_clr, ~pca(.x, ncomp = 3)) 
 ```
 
 Make PCA plots.
 
-```{r, fig.width=16, fig.height=4.5, echo=FALSE, results='hide'}
+```{r, fig.width=16, fig.height=20}
 # make plots
-pcaPlot_ruv <- pmap(list(pca_ruv, prmt$k, prmt$prp), function(x, y, z){
+pcaPlot_ruvs <- pmap(list(pca_ruvs, prmt$k, prmt$prp), function(x, y, z){
   cbind(mtd, x$variates$X) %>%
-    ggplot(aes(x = PC1, y = PC2, color = SampleType, shape = PCRBatch)) +
+  ggplot(aes(x = PC1, y = PC2, color = SampleType, shape = PCRBatch)) +
     geom_point(size = 2) +
-    geom_line(aes(group = SampleName), color = "black") + # connect technical replicates by line
-    labs(title = paste0("RUVSeq (k = ", y, ", nc = ", z, ")"), 
-         color = "Sample type", shape = "PCR batch", 
-         x = paste0("PC1: ", round(100 * x$explained_variance[1], 2), "%"),
-         y = paste0("PC2: ", round(100 * x$explained_variance[2], 2), "%")) +
-    scale_color_manual(values = brewer.pal(n = 12, name = "Paired")[c(1:10, 12)]) +
-    theme_bw()
+    # connect paired technical replicates by line
+    geom_line(aes(group = SampleName), color = "black") +
+    labs(
+      title = paste0("RUVs (k = ", y, ", nc = ", z, ")"), 
+      color = "Sample type", shape = "PCR batch", 
+      x = paste0("PC1: ", round(100 * x$prop_expl_var$X[1], 2), "%"),
+      y = paste0("PC2: ", round(100 * x$prop_expl_var$X[2], 2), "%")
+      ) +
+    scale_color_brewer(palette = "Paired") +
+    theme_bw() 
     }
   ) 
 
 # arrange plots
-ggarrange(plotlist = pcaPlot_ruv, ncol = 4, legend = "right", common.legend = TRUE)
-```
-
-The PCA plots with k = 4, 5 or 10 look promising. Let's look at one of them in 3d dimensions.
-
-```{r}
-# extract data
-k4_nc1 <- cbind(mtd, pca_ruv$ruv_k4_nc1$variates$X)
-
-# 3d PCA plot with plot_ly
-plot_ly(
-  x = k4_nc1[, "PC1"], y = k4_nc1[, "PC2"], z = k4_nc1[, "PC3"], 
-  type = "scatter3d", mode = "markers", color = k4_nc1$SampleType, 
-  colors = "Paired") %>% #brewer.pal(n = 12, name = "Paired")
-  layout(scene = list(
-    xaxis = list(title = paste0('PC1: ', round(pca_ruv$ruv_k4_nc1$explained_variance[1]*100, 2), "%")),
-    yaxis = list(title = paste0('PC2: ', round(pca_ruv$ruv_k4_nc1$explained_variance[2]*100, 2), "%")),
-    zaxis = list(title = paste0('PC3: ', round(pca_ruv$ruv_k4_nc1$explained_variance[3]*100, 2), "%"))
-    )
-  )
+wrap_plots(pcaPlot_ruvs, ncol = 4, guides = "collect") 
 ```
 
 ### ComBat-Seq
@@ -284,9 +238,9 @@ pcaPlot_cmbt <- cbind(mtd, pca_cmbt$variates$X) %>%
   geom_line(aes(group = SampleName), color = "black") +
   labs(title = "ComBat-Seq", 
        color = "Sample type", shape = "PCR batch", 
-       x = paste0("PC1: ", round(100 * pca_cmbt$explained_variance[1], 2), "%"),
-       y = paste0("PC2: ", round(100 * pca_cmbt$explained_variance[2], 2), "%")) +
-  scale_color_manual(values = brewer.pal(n = 12, name = "Paired")[c(1:10, 12)]) +
+       x = paste0("PC1: ", round(100 * pca_cmbt$prop_expl_var$X[1], 2), "%"),
+       y = paste0("PC2: ", round(100 * pca_cmbt$prop_expl_var$X[2], 2), "%")) +
+  scale_color_brewer(palette = "Paired") +
   theme_bw() 
 
 pcaPlot_cmbt
@@ -299,29 +253,33 @@ pcaPlot_cmbt
 The partial redundancy analysis (pRDA) is a multivariate method to assess globally the effect of treatments and batch. Here, we run pRDA and get variance explained by treatments and batch.
 
 ```{r}
-# combine otu table before and after batch corrections in a list
-otus <- c(before = list(otu_clr), ruv_clr, combatseq = list(cmbt_clr)) 
+# combine ASV table before and after batch corrections in a list
+asv_tbls <- c(before = list(asv_tbl_clr), ruvs_clr, combatseq = list(cmbt_clr)) 
 
-# merge otu tables and nest by batch correction methods 
-otus_nst <- purrr::map(otus, as.data.frame) %>%
+# merge ASV tables and nest by batch correction methods 
+asv_tbls_nst <- purrr::map(asv_tbls, as.data.frame) %>%
   bind_rows(.id = "batch_correction") %>%
   group_nest(batch_correction, .key = "data")
 
 # define experiment design
-design <- data.frame(SampleType = rep(SampleType, length(otus)), 
-                     PCRBatch = rep(PCRBatch, length(otus)), 
-                     batch_correction = rep(names(otus), each = nrow(mtd)))
+design <- data.frame(
+  SampleType = rep(SampleType, length(asv_tbls)), 
+  PCRBatch = rep(PCRBatch, length(asv_tbls)), 
+  batch_correction = rep(names(asv_tbls), each = nrow(mtd))
+  )
 
 design_nst <- group_nest(design, batch_correction, .key = "design")
 
 # run pRDA and extract variance explained by treatment and batch effects
-rda <- inner_join(otus_nst, design_nst, by = "batch_correction") %>%
-  mutate(rda_trt = map2(data, design, ~rda(.x ~ PCRBatch + Condition(SampleType), data = .y)), 
-         rda_bat = map2(data, design, ~rda(.x ~ SampleType + Condition(PCRBatch), data = .y)),
-         var_trt = map_dbl(rda_trt, ~.x$pCCA$tot.chi*100/.x$tot.chi),
-         var_bat = map_dbl(rda_bat, ~.x$pCCA$tot.chi*100/.x$tot.chi),
-         batch_correction = factor(batch_correction, levels = names(otus)))  %>%
-  select(batch_correction, var_trt, var_bat)  %>%
+rda <- inner_join(asv_tbls_nst, design_nst, by = "batch_correction") %>%
+  mutate(
+    rda_trt = map2(data, design, ~rda(.x ~ PCRBatch + Condition(SampleType), data = .y)), 
+    rda_bat = map2(data, design, ~rda(.x ~ SampleType + Condition(PCRBatch), data = .y)),
+    var_trt = map_dbl(rda_trt, ~.x$pCCA$tot.chi*100/.x$tot.chi),
+    var_bat = map_dbl(rda_bat, ~.x$pCCA$tot.chi*100/.x$tot.chi),
+    batch_correction = factor(batch_correction, levels = names(asv_tbls))
+    ) %>%
+  dplyr::select(batch_correction, var_trt, var_bat)  %>%
   rename(Method = batch_correction, Treatment = var_trt, Batch = var_bat)  %>%
   pivot_longer(Treatment:Batch, names_to = "Type", values_to = "var_expl")  %>%
   mutate(var_expl = round(var_expl, 2))
@@ -329,294 +287,31 @@ rda <- inner_join(otus_nst, design_nst, by = "batch_correction") %>%
 
 ### Plotting
 
-Make bar plots showing variance explained by treatments and batch.
+Make bar plots showing variance explained by treatments and batch effects.
 
-```{r, fig.height=6}
+```{r, fig.height=8, fig.width=9}
 var_expl <- ggplot(rda, aes(x = fct_rev(Method), y = var_expl, fill = Type)) + 
   geom_bar(stat = "identity", position = 'dodge', colour = 'black') + 
-  geom_text(aes(Method, var_expl + 5, label = var_expl), size = 3,
-            position = position_dodge(width = 0.9)) + 
+  geom_text(
+    aes(Method, var_expl + 3, label = var_expl), size = 3,
+    position = position_dodge(width = 0.9)
+    ) + 
   coord_flip() +
   scale_y_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0))) +
   labs(x = "", y = "Variance explained (%)") + 
-  theme_bw(base_size = 12) +
+  theme_bw(base_size = 14) +
   guides(fill = guide_legend(reverse = TRUE)) 
 
 var_expl
 ```
 
-## Summary
+# Summary
 
-Based on the PCA plots and partial redundancy analysis (pRDA), we can conclude that the RUVSeq provides better batch effect corrections than the Combat-Seq does. In agreement with previous data, the RUVSeq is robust to the choice of negative control variables. Increasing the number of factors of unwanted variation, k, removes more unwanted variation. Setting k = 4, 5 or 10 yields very similar results. To avoid over-correcting batch effects, we choose the smallest K value, ie., k = 4 and nc = 1.
-
-# Validate results
-
-Get batch effect corrected OTU table and replace the original OTU table in the phyloseq object.
-
-```{r}
-# extract batch effect corrected OTU table
-otu_adj <- ruv$ruv_k4_nc1$normalizedCounts
-
-# replace otu table in the phyloseq object
-otu_table(ps) <- otu_table(otu_adj, taxa_are_rows = TRUE)
-```
-
-## Taxonomy
-
-Make a table containing top 10 most abundant taxa at genus level.
-
-```{r}
-taxa_tab <- Summarize.Taxa(otu_adj, txnm)$Genus %>% Make.Percent() 
-taxa_tab <- taxa_tab[order(rowMeans(taxa_tab), decreasing = T), ]
-Others <- colSums(taxa_tab[11:nrow(taxa_tab), ])
-taxa_tab <- rbind(taxa_tab[1:10, ], Others)
-```
-
-Tidy dataframe for making stacked bar plots.
-
-```{r}
-taxa_tab <- as.data.frame(taxa_tab) %>%
-  rownames_to_column("Taxa") %>%
-  separate(Taxa, sep = ";", c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")) %>% 
-  mutate(Phylum = ifelse(is.na(Phylum)|Phylum == "NA"|grepl("uncultured|Ambiguous|metagenome", Phylum), 
-                         Kingdom, 
-                         Phylum),
-         Class = ifelse(is.na(Class)|Class == "NA"|grepl("uncultured|Ambiguous|metagenome", Class), 
-                        Phylum, 
-                        Class),
-         Order = ifelse(is.na(Order)|Order == "NA"|grepl("uncultured|Ambiguous|metagenome", Order), 
-                        Class, 
-                        Order),
-         Family = ifelse(is.na(Family)|Family == "NA"|grepl("uncultured|Ambiguous|metagenome", Family), 
-                         Order, 
-                         Family),
-         Genus = ifelse(is.na(Genus)|Genus == "NA"|grepl("uncultured|Ambiguous|metagenome", Genus), 
-                        Family, 
-                        Genus)) %>%
-  select(-Kingdom, -(Class:Family)) %>%
-  pivot_longer(-c(Phylum, Genus), names_to = "SampleID", values_to = "Abundance") %>%
-  mutate(Phylum = gsub("p__", "", Phylum),
-         Genus = gsub("g__", "", Genus),
-         Genus = factor(Genus, levels = rev(unique(Genus)))) %>%
-  inner_join(rownames_to_column(mtd, "SampleID"), by = "SampleID")
-```
-
-Make stacked bar plots.
-
-```{r, fig.width=10}
-# define color scheme
-col <- c("grey", brewer.pal(n = 10, name = "Paired"))
-    
-# water samples
-taxa_bar_water <- filter(taxa_tab, SampleType == "Water") %>%
-  ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat = "identity") +
-  labs(x = "", y = "") +
-  scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
-  scale_fill_manual(values = col) +
-  guides(fill=guide_legend(ncol=1)) +
-  facet_wrap(~ Source) +
-  theme_bw() +
-  theme(axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        strip.background = element_blank(),
-        legend.margin = margin(0, 0, 0, 0),
-        legend.box.margin = margin(5, -10, 5, -8)) 
-
-# feed samples
-taxa_bar_feed <- filter(taxa_tab, SampleType == "Feed") %>%
-  ggplot(aes(x = Diet, y = Abundance, fill = Genus)) +
-  geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "Sample", y = "") +
-  scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
-  scale_fill_manual(values = col) +
-  facet_nested(~ Source + Diet, scales = "free_x", nest_line = TRUE) +
-  theme_bw() +
-  theme(axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        strip.background = element_blank(),
-        legend.position = "none") 
-
-# samples from fish fed the REF diet 
-taxa_bar_ref <- filter(taxa_tab, !(IsTechnicalReplicate == "yes" & PCRBatch == 2)) %>%
-  filter(grepl("REF-", SampleType)) %>%
-  ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat = "identity") +
-  labs(x = "", y = "Relative abundance (%)") +
-  scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
-  scale_fill_manual(values = col) +
-  facet_nested(~ Diet + Source + Segment, scales = "free_x", nest_line = TRUE) +
-  theme_bw() +
-  theme(axis.text.x = element_blank(),
-        strip.background = element_blank(),
-        legend.position = "none") 
-
-# samples from fish fed the IM diet 
-taxa_bar_im <- filter(taxa_tab, !(IsTechnicalReplicate == "yes" & PCRBatch == 2)) %>%
-  filter(grepl("IM-", SampleType)) %>%
-  ggplot(aes(x = SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat = "identity") +
-  labs(x = "", y = "") +
-  scale_y_continuous(breaks = 0:10*10, expand = c(0,0)) + 
-  scale_fill_manual(values = col) +
-  facet_nested(~ Diet + Source + Segment, scales = "free_x", nest_line = TRUE) +
-  theme_bw() +
-  theme(axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        strip.background = element_blank(),
-        legend.position = "none") 
-
-# assemble plots
-plot_grid(
-  taxa_bar_ref, 
-  taxa_bar_feed + theme(plot.margin = margin(l = -0.5, unit = "cm")),
-  taxa_bar_im + theme(plot.margin = margin(l = -0.4, unit = "cm")),
-  taxa_bar_water + theme(plot.margin = margin(l = -0.3, unit = "cm")), 
-  nrow =  1, align = 'h', axis = "tb", 
-  rel_widths = c(6, 1.5, 6, 4.5)) 
-```
-
-Compared to the taxa barplot (data/intermediate/qiime2/97otu/taxa-bar-plots-filtered-97otu.qzv) before batch correction , the taxonomic composition of samples is very different after the batch correction by RUVSeq.
-
-## Alpha diversity
-
-Compute alpha diversity indices.
-
-```{r}
-# compute Observed features, Peilou's Evenness and Shannon's index
-alph_npd <- alpha(ps, index = c("observed", "evenness_pielou", "diversity_shannon")) %>%
-  rownames_to_column("SampleID")
-
-# compute Faith's Phylogenetic Diversity
-alph_pd <- pd(samp = t(otu_table(ps)), tree = phy_tree(ps), include.root = F) %>%
-  select(PD) %>%
-  rownames_to_column("SampleID")
-
-# combine data
-alph <- inner_join(alph_npd, alph_pd, by = "SampleID") %>%
-  inner_join(rownames_to_column(mtd, "SampleID"), by = "SampleID") %>%
-  rename("Observed OTUs" = observed, "Pielou's evenness" = evenness_pielou, 
-         "Shannon's index" = diversity_shannon, "Faith's PD" = PD) %>%
-  pivot_longer("Observed OTUs":"Faith's PD", names_to = "alph_indx", values_to = "value") %>%
-  mutate(alph_indx = factor(alph_indx, levels = c("Observed OTUs", "Pielou's evenness", 
-                                                  "Shannon's index", "Faith's PD")))
-```
-
-Alpha diversity of technical replicates.
-
-```{r}
-filter(alph, IsTechnicalReplicate == "yes") %>%
-  ggplot(aes(x = PCRBatch, y = value)) +
-  geom_boxplot(aes(color = PCRBatch), width = 0.3) +
-  geom_point(aes(color = PCRBatch)) +
-  geom_line(aes(group = SampleName), linetype = "dashed") + 
-  labs(x = "PCR batch", color = "PCR batch") +
-  facet_wrap(~alph_indx, scales = "free_y") +
-  scale_fill_brewer(palette = "Dark2") +
-  theme_bw() 
-```
-
-Alpha diversity of REF-PIM and REF-DIM samples amplified in different PCR batches.
-
-```{r}
-filter(alph, SampleType %in% c("REF-PIM", "REF-DIM")) %>%
-  ggplot(aes(x = SampleType, y = value)) +
-  geom_boxplot(width = 0.3) +
-  geom_point(aes(color = PCRBatch)) +
-  labs(x = "Sample type", color = "PCR batch") +
-  facet_wrap(~ alph_indx, scales = "free_y") +
-  scale_fill_brewer(palette = "Dark2") +
-  theme_bw() 
-```
-
-In line with previous observations, unweighted alpha indices such as Observed OTUs and Faith's PD are more easily influenced by technical variations than weighted alpha indices like Shannon's index.
-
-## Beta diversity
-
-OTU table summary.
-
-```{r}
-sampleSum <- colSums(otu_adj) %>% sort()
-sampleSum
-```
-
-We lost quite a lot of sequences after the batch effect correction. Here we rarefy OTU table at a sub-sampling depth of `r sampleSum[2]` sequences.
-
-```{r}
-ps_rf <- rarefy_even_depth(ps, sample.size = sampleSum[2], rngseed = 1910)
-```
-
-### Jaccard distance
-
-```{r, fig.width=8}
-# pcoa analysis
-ord_jac <- ordinate(ps_rf, method = "PCoA", distance = "jaccard")
-
-# ordination plot
-plot_ordination(ps_rf, ord_jac, color = "SampleType", shape = "PCRBatch") +
-  scale_color_manual(values = brewer.pal(n = 12, name = "Paired")[c(1:10, 12)]) +
-  geom_line(aes(group = SampleName), color = "black") +
-  geom_point(size = 3) +
-  labs(title = "PCoA of Jaccard distance after batch correcton by RUVSeq") +
-  theme_bw() 
-```
-
-### Bray-Curtis distance
-
-```{r, fig.width=8}
-# pcoa analysis
-ord_bc <- ordinate(ps_rf, method = "PCoA", distance = "bray")
-
-# ordination plot
-plot_ordination(ps_rf, ord_bc, color = "SampleType", shape = "PCRBatch") +
-  scale_color_manual(values = brewer.pal(n = 12, name = "Paired")[c(1:10, 12)]) +
-  geom_line(aes(group = SampleName), color = "black") +
-  geom_point(size = 3) +
-  labs(title = "PCoA of Bray-Curtis distance after batch correcton by RUVSeq") +
-  theme_bw() 
-```
-
-### UniFrac distance
-
-Unweighted UniFrac distance.
-
-```{r, fig.width=8}
-# pcoa analysis
-ord_uwuf <- ordinate(ps_rf, method = "PCoA", distance = "unifrac", weighted = FALSE)
-
-# ordination plot
-plot_ordination(ps_rf, ord_uwuf, color = "SampleType", shape = "PCRBatch") +
-  scale_color_manual(values = brewer.pal(n = 12, name = "Paired")[c(1:10, 12)]) +
-  geom_line(aes(group = SampleName), color = "black") +
-  geom_point(size = 3) +
-  labs(title = "PCoA of unweighted UniFrac distance after batch correcton by RUVSeq") +
-  theme_bw() 
-```
-
-Weighted UniFrac distance.
-
-```{r, fig.width=8}
-# pcoa analysis
-ord_wuf <- ordinate(ps_rf, method = "PCoA", distance = "unifrac", weighted = TRUE)
-
-# ordination plot
-plot_ordination(ps_rf, ord_wuf, color = "SampleType", shape = "PCRBatch") +
-  scale_color_manual(values = brewer.pal(n = 12, name = "Paired")[c(1:10, 12)]) +
-  geom_line(aes(group = SampleName), color = "black") +
-  geom_point(size = 3) +
-  labs(title = "PCoA of weighted UniFrac distance after batch correcton by RUVSeq") +
-  theme_bw() 
-```
-
-PcoA plots based on various distance metrics show that batch effect is partly removed after the adjustment by RUVSeq.
-
-# Conclusion
-
-RUVSeq largely corrected PCR batch effects. However, the batch correction removed a large proportions of sequences in many samples and resulted in very different taxonomic compositions. Hence, we'll not correct the PCR batch effect but rather analyze the data separately or account for batch effect in the statistical models where applicable.
+Based on the PCA plots and partial redundancy analysis (pRDA), we can conclude that the RUVs provides better batch effect correction than the Combat-Seq does. In agreement with previous observations, the RUVs is robust to the choice of negative control variables. Increasing the number of unwanted factors, k, removes more unwanted variation. Setting k = 4, 5 or 10 yields very good and similar results. However, our downstream data analyses show that some results are contradictory before and after the batch effect correction (e.g., microbial overlap between feed and intestinal mucosa; alpha-diversity). Hence, we'll not correct the batch effect but rather analyze the data separately or account for the batch effect in the statistical models where applicable.
 
 # Acknowledgements
 
-I'd like to thank Wang and Lê Cao for publishing the code along with their paper ["Managing batch effects in microbiome data"](https://academic.oup.com/bib/article-abstract/21/6/1954/5643537?redirectedFrom=fulltext). Part of their code is used for the present analysis.
+We’d like to thank Wang and Lê Cao for publishing the code and tutorials along with their review paper ["Managing batch effects in microbiome data"](https://academic.oup.com/bib/article-abstract/21/6/1954/5643537?redirectedFrom=fulltext). Part of their code is used in the present analysis.
 
 # Session information
 
