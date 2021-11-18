@@ -3,8 +3,7 @@
   [![Launch Rstudio Binder](http://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/yanxianl/Li_AqFl1-Microbiota_2020/master?urlpath=rstudio)
 <!-- badges: end -->
 
-## Consistent changes in the intestinal microbiota of Atlantic salmon fed insect meal diets
-### doi: https://doi.org/10.1101/2021.07.04.451034
+## Consistent changes in the intestinal microbiota of Atlantic salmon fed insect meal diets (doi: https://doi.org/10.1101/2021.07.04.451034)
 
 ### Abstract
 **Background:** Being part of fish's natural diets, insects have become a realistic, sustainable feed ingredient for aquaculture. While nutritional values of insects have been extensively studied in various fish species, their impact on the fish microbiota remains to be fully explored. In an 8-week freshwater feeding trial, Atlantic salmon (*Salmo salar*) were fed either a commercially relevant reference diet or an insect meal diet wherein black soldier fly (*Hermetia illucens*) larvae meal comprised 60% of total ingredients. Microbiota of digesta and mucosa origin from the proximal and distal intestine were collected and profiled along with feed and water samples. 
@@ -95,7 +94,7 @@ root
 ```
 
 ### How to regenerate the figures and tables
-Computationally lightweight RMarkdown files can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README file. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed. The instance has limited computational resources. Tasks requiring intensive computation, i.e., sequence denoising by DADA2, should not be run. Due to technical challenges, the instance was built on R 3.6.3 rather than R 4.1.1. Because of that, some R package versions are different from what we used for the actual data analysis but the results are identical. Note that multi-core parallel computing is not available for the RStudio stance we use here. Turn off the parallel computing when you run MaAsLin2.
+Computationally lightweight RMarkdown files can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README file. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed. The instance has limited computational resources. Tasks requiring intensive computation, i.e., sequence denoising by DADA2, should not be run. Due to technical challenges, the instance was built on R 3.6.3 rather than R 4.1.1. Because of that, some R package versions are different from what we used for the actual data analysis but the results are largely identical. Note that multi-core parallel computing is not available for the RStudio stance we use here. Turn off the parallel computing when you run MaAsLin2.
 
 To reproduce the figures and tables published in the paper, run the following RMarkdown files:
 
