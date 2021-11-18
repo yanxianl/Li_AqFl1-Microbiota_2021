@@ -124,8 +124,11 @@ All the code should be run from the project's root directory.
 
 1.Download or clone this github repository to your local computer.
 ```bash
-# clone the github repository
+# clone the github repository 
 git clone https://github.com/yanxianl/Li_AqFl1-Microbiota_2021.git
+
+# enter the project root directory
+cd Li_AqFl1-Microbiota_2021
 
 # delete the following folders and the associated files 
 rm -rf \
@@ -134,14 +137,12 @@ data/intermediate/qiime2/*/robust-Aitchison-pca*/
 ```
 2.Download raw sequence data, SILVA132 reference database and SILVA128 SEPP reference phylogeny (`code/00_setup.ipynb`).
 ```bash
-# activate qiime2 environment
-source $HOME/miniconda3/bin/activate
+# activate qiime2 environment and launch jupyter notebook to run code/00_setup.ipynb interactively
 conda activate qiime2-2020.11
-
-# launch jupyter notebook to run code/00_setup.ipynb interactively
 jupyter notebook
 
-# shutdown jupyter notebook after running the code by pressing Ctrl + c in the terminal
+# shutdown jupyter notebook (ctrl + c) and exit the conda environment
+conda deactivate
 ```
 3.Sequence denoising by dada2.
 ```bash
@@ -149,7 +150,14 @@ Rscript -e "rmarkdown::render('code/01_dada2_run1.Rmd')" && Rscript -e "rmarkdow
 ```
 4.Taxonomic assignment.
 ```bash
+# activate qiime2 environment
+conda activate qiime2-2020.11
+
+# render jupyter notebook
 jupyter nbconvert --execute --to html code/02_qiime2_part1.ipynb
+
+# exit the conda environment
+conda deactivate
 ```
 5.Filter the feature table to remove: 1).chloroplast/mitochondria sequences and those without a phylum-level taxonomic assignment;
 2).low-prevalence features that only present in one sample; 3).contaminating features.
@@ -158,7 +166,14 @@ Rscript -e "rmarkdown::render('code/03_filtering.Rmd')"
 ```
 6.Phylogeny and core-metrics-results.
 ```bash
+# activate qiime2 environment
+conda activate qiime2-2020.11
+
+# render jupyter notebook
 jupyter nbconvert --execute --to html code/04_qiime2_part2.ipynb
+
+# exit the conda environment
+conda deactivate
 ```
 7.Batch effect adjustment.
 ```bash
@@ -166,7 +181,14 @@ Rscript -e "rmarkdown::render('code/05_batch_correction.Rmd')"
 ```
 8.Split core-metrics-results based on the sequencing runs.
 ```bash
+# activate qiime2 environment
+conda activate qiime2-2020.11
+
+# render jupyter notebook
 jupyter nbconvert --execute --to html code/06_qiime2_part3.ipynb
+
+# exit the conda environment
+conda deactivate
 ```
 9.Import qiime2 artifacts into R.
 ```bash
