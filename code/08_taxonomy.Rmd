@@ -632,15 +632,6 @@ ggsave(here("result/figure/Figure 2.tiff"), width = 10, height = 5,
 
 # Core microbiota
 
-ASV overlap (present/absent) among feed, digesta, mucosa and  water samples.
-
-```{r, fig.width=5}
-ps %>%
-  # remove control samples
-  subset_samples(Source %in% c("Digesta", "Mucosa", "Feed", "Water")) %>%
-  MicEco::ps_venn(group = "Source", type = "counts")
-```
-
 ## Compute core microbiota
 
 Data preprocessing.
