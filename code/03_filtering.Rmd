@@ -29,16 +29,16 @@ opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE, cache = TRUE)
 ## Load packages
 
 ```{r}
-library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
-library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
-library(qiime2R) # Import qiime2 artifacts to R, [github::jbisanz/qiime2R] v0.99.35  
-library(phyloseq) # Analysis of high-throughput microbiome data, Bioconductor v1.34.0 
-library(speedyseq) # Faster phyloseq functions, [github::mikemc/speedyseq] v0.5.3.9001
-library(decontam) # Identify Contaminants in Sequencing Data, Bioconductor v1.10.0
-library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN v1.1.1  
-library(ggstatsplot) # 'ggplot2' Based Plots with Statistical Details, CRAN v0.6.8
-library(RColorBrewer) # ColorBrewer Palettes, CRAN v1.1-2 
-library(biomformat) # An interface package for the BIOM file format, Bioconductor v1.18.0
+library(here) # A Simpler Way to Find Your Files, CRAN 
+library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN 
+library(qiime2R) # Import qiime2 artifacts to R, [github::jbisanz/qiime2R]  
+library(phyloseq) # Analysis of high-throughput microbiome data, Bioconductor  
+library(speedyseq) # Faster phyloseq functions, [github::mikemc/speedyseq] 
+library(decontam) # Identify Contaminants in Sequencing Data, Bioconductor 
+library(cowplot) # Streamlined Plot Theme and Plot Annotations for 'ggplot2', CRAN 
+library(ggstatsplot) # 'ggplot2' Based Plots with Statistical Details, CRAN 
+library(RColorBrewer) # ColorBrewer Palettes, CRAN  
+library(biomformat) # An interface package for the BIOM file format, Bioconductor 
 ```
 
 ## Load functions

@@ -36,15 +36,15 @@ Sys.setlocale(category = "LC_ALL", locale = "Greek")
 Load packages.
 
 ```{r}
-library(here) # A Simpler Way to Find Your Files, CRAN v1.0.1
-library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN v1.3.0 
-library(ggtext) # Improved Text Rendering Support for 'ggplot2', CRAN v0.1.1
-library(patchwork) # The Composer of Plots, CRAN v1.1.1  
-library(RColorBrewer) # ColorBrewer Palettes, CRAN v1.1-2 
-library(PerformanceAnalytics) # Econometric Tools for Performance and Risk Analysis, CRAN v2.0.4
-library(MicrobeR) # Handy functions for microbiome analysis in R, [github::jbisanz/MicrobeR] v0.3.2 
-library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor v1.34.0 
-library(Maaslin2) # Maaslin2, Bioconductor v1.4.0
+library(here) # A Simpler Way to Find Your Files, CRAN 
+library(tidyverse) # Easily Install and Load the 'Tidyverse', CRAN
+library(ggtext) # Improved Text Rendering Support for 'ggplot2', CRAN 
+library(patchwork) # The Composer of Plots, CRAN   
+library(RColorBrewer) # ColorBrewer Palettes, CRAN 
+library(PerformanceAnalytics) # Econometric Tools for Performance and Risk Analysis, CRAN 
+library(MicrobeR) # Handy functions for microbiome analysis in R, [github::jbisanz/MicrobeR]  
+library(phyloseq) # Handling and analysis of high-throughput microbiome census data, Bioconductor
+library(Maaslin2) # Maaslin2, Bioconductor 
 
 # Set seed
 set.seed(1910)
