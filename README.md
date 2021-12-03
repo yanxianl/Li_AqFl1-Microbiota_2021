@@ -3,10 +3,14 @@
   [![Launch Rstudio Binder](http://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/yanxianl/Li_AqFl1-Microbiota_2020/master?urlpath=rstudio)
 <!-- badges: end -->
 
-## Consistent changes in the intestinal microbiota of Atlantic salmon fed insect meal diets
-### doi: https://doi.org/10.1101/2021.07.04.451034
+## Consistent changes in the intestinal microbiota of Atlantic salmon fed insect meal diets (doi: https://doi.org/10.1101/2021.07.04.451034)
 
-Being part of fish's natural diets, insects have become a realistic, sustainable feed ingredient for aquaculture. While nutritional values of insects have been extensively studied in various fish species, their impact on the fish microbiota remains to be fully explored. In an 8-week freshwater feeding trial, Atlantic salmon (*Salmo salar*) were fed either a commercially relevant reference diet or an insect meal diet wherein black soldier fly (*Hermetia illucens*) larvae meal comprised 60% of total ingredients. Microbiota of digesta and mucosa origin from the proximal and distal intestine were collected and profiled along with feed and water samples. The insect meal diet markedly modulated the salmon intestinal microbiota. Overall, the microbial diversity was lower in the digesta of salmon fed the insect meal diet but higher in the mucosa. A particular group of bacterial genera, dominated by members of the *Bacillaceae* family, was enriched in salmon fed the insect meal diet, which confirms our previous findings in a seawater feeding trial. We also found that microbiota in the intestine closely resembled that of the feeds but was distinct from the water microbiota. Notably, bacterial genera associated with the diet effects were present in the feeds as well. In conclusion, our results show consistent changes in the intestinal microbiota of Atlantic salmon fed diets containing black soldier fly larvae meal. The next challenge is to evaluate the extent to which these alterations are attributable to feed microbiota and dietary nutrients and what these changes mean for fish physiology and health. 
+### Abstract
+**Background:** Being part of fish's natural diets, insects have become a realistic, sustainable feed ingredient for aquaculture. While nutritional values of insects have been extensively studied in various fish species, their impact on the fish microbiota remains to be fully explored. In an 8-week freshwater feeding trial, Atlantic salmon (*Salmo salar*) were fed either a commercially relevant reference diet or an insect meal diet wherein black soldier fly (*Hermetia illucens*) larvae meal comprised 60% of total ingredients. Microbiota of digesta and mucosa origin from the proximal and distal intestine were collected and profiled along with feed and water samples. 
+
+**Results:** The insect meal diet markedly modulated the salmon intestinal microbiota. Salmon fed the insect meal diet showed similar or lower alpha-diversity indices in the digesta but higher alpha-diversity indices in the mucosa. A particular group of bacterial genera, dominated by members of the *Bacillaceae* family, was enriched in salmon fed the insect meal diet, which confirms our previous findings in a seawater feeding trial. We also found that microbiota in the intestine closely resembled that of the feeds but was distinct from the water microbiota. Notably, bacterial genera associated with the diet effects were present in the feeds as well. 
+
+**Conclusions:** In conclusion, our results show consistent changes in the intestinal microbiota of Atlantic salmon fed diets containing black soldier fly larvae meal. The next challenge is to evaluate the extent to which these alterations are attributable to feed microbiota and dietary nutrients and what these changes mean for fish physiology and health. 
 
 ### Overview
 
@@ -90,7 +94,7 @@ root
 ```
 
 ### How to regenerate the figures and tables
-Computationally lightweight RMarkdown files can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README file. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed. The instance has limited computational resources. Tasks requiring intensive computation, i.e., sequence denoising by DADA2, should not be run. Due to technical challenges, the instance was built on R 3.6.3 rather than R 4.1.1. Because of that, some R package versions are different from what we used for the actual data analysis but the results are identical. Note that multi-core parallel computing is not available for the RStudio stance we use here. Turn off the parallel computing when you run MaAsLin2.
+Computationally lightweight RMarkdown files can be directly run online by clicking the ![Launch Binder](http://mybinder.org/badge_logo.svg) badge located at the top of this README file. After clicking the badge, this repository will be turned into an RStudio instance that has all the dependencies installed. The instance has limited computational resources. Tasks requiring intensive computation, i.e., sequence denoising by DADA2, should not be run. Due to technical challenges, the instance was built on R 3.6.3 rather than R 4.1.1. Because of that, some R package versions are different from what we used for the actual data analysis but the results are largely identical. Note that multi-core parallel computing is not available for the RStudio stance we use here. Turn off the parallel computing when you run MaAsLin2.
 
 To reproduce the figures and tables published in the paper, run the following RMarkdown files:
 
@@ -122,7 +126,7 @@ To reproduce the figures and tables published in the paper, run the following RM
 
 All the code should be run from the project's root directory.
 
-1.Download or clone this github repository to your local computer.
+1.Clone this github repository to your local computer.
 ```bash
 # clone the github repository 
 git clone https://github.com/yanxianl/Li_AqFl1-Microbiota_2021.git
@@ -206,7 +210,7 @@ Rscript -e "rmarkdown::render('code/09_alpha_diversity.Rmd')"
 ```bash
 Rscript -e "rmarkdown::render('code/10_beta_diversity.Rmd')"
 ```
-13.Association testing between microbial clades and sample metadata.
+13.Association testing between sample metadata and microbial clades.
 ```bash
 Rscript -e "rmarkdown::render('code/11_multivariable_association.Rmd')"
 ```
