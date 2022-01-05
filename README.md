@@ -19,30 +19,17 @@ Here's an overview of the file organization in this project.
 root
 ├── code
 │   ├── 00_setup.ipynb
-│   ├── 00_setup.html
-│   ├── 01_dada2_run1.html
 │   ├── 01_dada2_run1.Rmd
-│   ├── 01_dada2_run2.html
 │   ├── 01_dada2_run2.Rmd
-│   ├── 02_qiime2_part1.html
 │   ├── 02_qiime2_part1.ipynb
-│   ├── 03_filtering.html
 │   ├── 03_filtering.Rmd
-│   ├── 04_qiime2_part2.html
 │   ├── 04_qiime2_part2.ipynb
-│   ├── 05_batch_correction.html
 │   ├── 05_batch_correction.Rmd
-│   ├── 06_qiime2_part3.html
 │   ├── 06_qiime2_part3.ipynb
-│   ├── 07_qiime2R.html
 │   ├── 07_qiime2R.Rmd
-│   ├── 08_taxonomy.html
 │   ├── 08_taxonomy.Rmd
-│   ├── 09_alpha_diversity.html
 │   ├── 09_alpha_diversity.Rmd
-│   ├── 10_beta_diversity.html
 │   ├── 10_beta_diversity.Rmd
-│   ├── 11_multivariable_association.html
 │   ├── 11_multivariable_association.Rmd
 │   ├── functions
 │   │   ├── plot_prevalence.R
@@ -57,8 +44,6 @@ root
 │   │   └── README.md
 │   ├── reference
 │   │   ├── mock_description.pdf
-│   │   ├── mock-expected.biom
-│   │   ├── mock-expected.qza
 │   │   ├── mock_expected.tsv
 │   │   ├── sepp-refs-silva-128.qza
 │   │   ├── silva_132_99_16S.fna
